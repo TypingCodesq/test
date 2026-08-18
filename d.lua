@@ -612,7 +612,7 @@ local coinNoclip=false
 local function cs()
 local r=gr()
 local h=gh()
-<=0 then return end
+if not h or (h and h.Health<=0) then return end
 if not cfg.fm.cn then
 if coinNoclip then
 r.CanCollide=true
