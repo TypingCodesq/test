@@ -1,32 +1,14 @@
 if not game:IsLoaded() then game.Loaded:Wait() end
-local task=task or {wait=wait,spawn=spawn}
-local typeof=typeof or type
-local unpack=unpack or table.unpack
-local tick=tick or function() return os.clock() end
-local clamp=math.clamp or function(v,a,b) if v<a then return a elseif v>b then return b else return v end end
-local wt=task.wait or wait or function() return 0 end
-local sp=task.spawn or spawn
-if type(sp)~="function" then
-sp=function(f) coroutine.resume(coroutine.create(f)) end
-end
-local function checkHooks()
-if getgenv and getgenv().HookDetection then return true end
-if debug and debug.gethook then if debug.gethook() then print("nice try kid") return false end end
-return true
-end
-if not checkHooks() then return end
 local ps=game:GetService("Players")
 local rs=game:GetService("RunService")
 local uis=game:GetService("UserInputService")
-local lt=game:GetService("Lighting")
 local cg=game:GetService("CoreGui")
 local sgui=game:GetService("StarterGui")
-local db=game:GetService("Debris")
 local lp=ps.LocalPlayer
 local cam=workspace.CurrentCamera
-local ms=lp:GetMouse()
 local logo=134441968486950
 local alive=true
+local function safe(f) pcall(f) end
 pcall(function()
 for _,n in ipairs({"XScript","XScript_ESP","XScript_FlyPad","XScript_Icon"}) do
 local o=cg:FindFirstChild(n)
@@ -45,10 +27,6 @@ mv={fly=false,fs=60,nc=false,spd=false,sv=32,ij=false},
 fm={cn=false,wp=false}
 }
 local fi={F=false,B=false,L=false,R=false,U=false,D=false}
-local wrn={}
-local function once(k,e)
-if not wrn[k] then wrn[k]=true warn("[X-SCRIPT] "..k..": "..tostring(e)) end
-end
 local function fbc(p,c)
 if not p then return nil end
 local ok,l=pcall(function() return p:GetChildren() end)
@@ -97,7 +75,7 @@ if not alive then return end
 local r=gr()
 local h=gh()
 if not r or not h then return end
-if r.Position.Y<-200 then pcall(function() r.CFrame=CFrame.new(0,50,0) end) end
+if r.Position.Y<-200 then safe(function() r.CFrame=CFrame.new(0,50,0) end) end
 if not cfg.cb.ad then return end
 if not roundActive() then return end
 if tick()-lastDodge<0.3 then return end
@@ -111,7 +89,7 @@ local kc=killer.Character
 if kc then
 for _,t in ipairs(kc:GetChildren()) do
 if t:IsA("Tool") and t.Name:lower():find("knife") then
-pcall(function()
+safe(function()
 r.CFrame=CFrame.new(r.Position+Vector3.new(math.random(-30,30),10,math.random(-30,30)))
 lastDodge=tick()
 end)
@@ -126,7 +104,7 @@ if kh then
 local toP=(r.Position-kh.Position).Unit
 local dot=toP:Dot(kh.CFrame.LookVector)
 if dot>0.8 then
-pcall(function()
+safe(function()
 local h2=gh()
 if h2 then
 local perp=Vector3.new(-toP.Z,0,toP.X)
@@ -149,17 +127,8 @@ Sheriff=Color3.fromRGB(60,150,255),
 Innocent=Color3.fromRGB(120,255,120)
 }
 local function ce(p)
-local c={H=nil,B=nil,L=nil}
-pcall(function()
-local h=Instance.new("Highlight")
-h.DepthMode=Enum.HighlightDepthMode.AlwaysOnTop
-h.FillTransparency=0.6
-h.OutlineTransparency=0
-h.Enabled=false
-h.Parent=es
-c.H=h
-end)
-pcall(function()
+local c={B=nil,L=nil}
+safe(function()
 local b=Instance.new("BillboardGui")
 b.Size=UDim2.new(0,130,0,40)
 b.ExtentsOffset=Vector3.new(0,3.2,0)
@@ -183,8 +152,7 @@ end
 local function re(p)
 local c=ec[p]
 if c then
-pcall(function() c.H:Destroy() end)
-pcall(function() c.B:Destroy() end)
+safe(function() c.B:Destroy() end)
 ec[p]=nil
 end
 end
@@ -207,12 +175,6 @@ if r=="Murderer" and cfg.es.M then sh=true end
 if r=="Sheriff" and cfg.es.S then sh=true end
 if r=="Innocent" and cfg.es.I then sh=true end
 local co=rc[r] or Color3.new(1,1,1)
-if c.H then
-c.H.Adornee=ch
-c.H.FillColor=co
-c.H.OutlineColor=co
-c.H.Enabled=sh
-end
 if c.B then
 c.B.Adornee=hd
 c.B.Enabled=sh
@@ -227,7 +189,6 @@ c.L.TextColor3=co
 end
 end
 else
-if c.H then c.H.Enabled=false end
 if c.B then c.B.Enabled=false end
 end
 end
@@ -239,24 +200,6 @@ if not alive then return end
 local r=gr()
 if not r then return end
 if cfg.mv.fly then
-local a=r:FindFirstChild("XS_FA")
-if not a then
-a=Instance.new("Attachment")
-a.Name="XS_FA"
-a.Parent=r
-end
-local l=r:FindFirstChild("XS_FL")
-if not l then
-pcall(function()
-l=Instance.new("LinearVelocity")
-l.Name="XS_FL"
-l.Attachment0=a
-l.MaxForce=100000
-l.RelativeTo=Enum.ActuatorRelativeTo.World
-l.Parent=r
-end)
-end
-if l then
 local d=Vector3.new(0,0,0)
 local cf=cam.CFrame
 if fk("F",Enum.KeyCode.W) then d=d+cf.LookVector end
@@ -265,14 +208,11 @@ if fk("L",Enum.KeyCode.A) then d=d-cf.RightVector end
 if fk("R",Enum.KeyCode.D) then d=d+cf.RightVector end
 if fk("U",Enum.KeyCode.Space) then d=d+Vector3.new(0,1,0) end
 if fk("D",Enum.KeyCode.LeftControl) then d=d-Vector3.new(0,1,0) end
-if d.Magnitude>0 then d=d.Unit end
-pcall(function() l.VectorVelocity=d*cfg.mv.fs end)
+if d.Magnitude>0 then
+safe(function() r.CFrame=r.CFrame+d.Unit*(cfg.mv.fs*0.03) end)
 end
 else
-local a=r:FindFirstChild("XS_FA")
-local l=r:FindFirstChild("XS_FL")
-if a then a:Destroy() end
-if l then l:Destroy() end
+-- nothing
 end
 end
 local ns={}
@@ -290,7 +230,7 @@ end
 else
 if next(ns) then
 for p,v in pairs(ns) do
-pcall(function() if p.Parent then p.CanCollide=v end end)
+safe(function() if p.Parent then p.CanCollide=v end end)
 end
 ns={}
 end
@@ -311,14 +251,9 @@ end
 uis.JumpRequest:Connect(function()
 if cfg.mv.ij then
 local h=gh()
-if h then pcall(function() h:ChangeState(Enum.HumanoidStateType.Jumping) end) end
+if h then safe(function() h:ChangeState(Enum.HumanoidStateType.Jumping) end) end
 end
 end)
-local function ad(o,t)
-local d=t-o
-if d.Magnitude<0.01 then return d end
-return d.Unit*math.min(d.Magnitude+1,999)
-end
 local at=nil
 local av=Vector3.new(0,0,0)
 local function ra()
@@ -344,7 +279,7 @@ if bd then
 at=bd
 if rt then
 local ok,v=pcall(function() return rt.Velocity end)
-if ok and typeof(v)=="Vector3" then av=v end
+if ok and type(v)=="userdata" then av=v else av=Vector3.new(0,0,0) end
 end
 return
 end
@@ -353,136 +288,49 @@ end
 end
 at=nil
 end
-local mh=false
-local oi=nil
-local function imh()
-if type(getrawmetatable)~="function" or type(setreadonly)~="function" then return false end
+local saInstalled=false
+local function installSA()
+if saInstalled then return true end
 local ok=pcall(function()
-local mt=getrawmetatable(game)
-if not mt or type(mt.__index)~="function" then error("no mt") end
-oi=mt.__index
-setreadonly(mt,false)
-local hk=function(s,k)
-if k=="Hit" or k=="Target" then
-if s==ms then
-local t=at
-if t and t.Parent then
-if k=="Hit" then
-return CFrame.new(t.Position+(av*0.1))
-else
-return t
-end
-end
-end
-end
-return oi(s,k)
-end
-if type(newcclosure)=="function" then
-mt.__index=newcclosure(hk)
-else
-mt.__index=hk
-end
-setreadonly(mt,true)
-mh=true
-end)
-return ok and mh
-end
-local function rmh()
-if not mh then return end
-pcall(function()
-local mt=getrawmetatable(game)
-setreadonly(mt,false)
-mt.__index=oi
-setreadonly(mt,true)
-end)
-mh=false
-end
-local ni=false
-local on=nil
-local function inh()
-if type(hookmetamethod)~="function" or type(getnamecallmethod)~="function" then return false end
-local ok=pcall(function()
-on=hookmetamethod(game,"__namecall",function(s,...)
+if type(hookmetamethod)~="function" or type(getnamecallmethod)~="function" then error("no hook") end
+local old=hookmetamethod(game,"__namecall",function(s,...)
 if cfg.cb.sa and s==workspace then
 local t=at
 if t and t.Parent then
 local m=getnamecallmethod()
-local p=t.Position+(av*0.1)
+local pos=t.Position+(av*0.1)
 if m=="Raycast" then
 local a={...}
-if typeof(a[1])=="Vector3" and typeof(a[2])=="Vector3" then
-a[2]=ad(a[1],p)
-return on(s,unpack(a))
+if type(a[1])=="userdata" and type(a[2])=="userdata" then
+local d=pos-a[1]
+if d.Magnitude>0.01 then a[2]=d.Unit*math.min(d.Magnitude+1,999) end
+return old(s,unpack(a))
 end
 elseif m=="FindPartOnRay" or m=="FindPartOnRayWithIgnoreList" or m=="FindPartOnRayWithWhitelist" then
 local a={...}
-if typeof(a[1])=="Ray" then
+if type(a[1])=="userdata" then
 local o=a[1].Origin
-a[1]=Ray.new(o,ad(o,p))
-return on(s,unpack(a))
+local d=pos-o
+local nd=d
+if d.Magnitude>0.01 then nd=d.Unit*math.min(d.Magnitude+1,999) end
+a[1]=Ray.new(o,nd)
+return old(s,unpack(a))
 end
 end
 end
 end
-return on(s,...)
+return old(s,...)
 end)
-ni=true
+saInstalled=true
 end)
-return ok and ni
+return ok
 end
-local function rnh()
-if not ni then return end
-if type(restorefunction)=="function" then
-pcall(function() restorefunction(game,"__namecall") end)
-end
-ni=false
-end
-local ri=false
-local of={}
-local function irh()
-if type(hookfunction)~="function" then return false end
-local ok=pcall(function()
-local tg={"Raycast","FindPartOnRay","FindPartOnRayWithIgnoreList"}
-for _,n in ipairs(tg) do
-local f=workspace[n]
-if type(f)=="function" then
-of[n]=hookfunction(f,function(...)
-if cfg.cb.sa then
-local t=at
-if t and t.Parent then
-local p=t.Position+(av*0.1)
-local a={...}
-if n=="Raycast" then
-if typeof(a[1])=="Vector3" and typeof(a[2])=="Vector3" then
-a[2]=ad(a[1],p)
-return of[n](unpack(a))
-end
-else
-if typeof(a[1])=="Ray" then
-local o=a[1].Origin
-a[1]=Ray.new(o,ad(o,p))
-return of[n](unpack(a))
-end
-end
-end
-end
-return of[n](...)
-end)
-end
-end
-ri=true
-end)
-return ok and ri
-end
-local function rrh()
-if not ri then return end
-if type(restorefunction)=="function" then
+local function removeSA()
+if not saInstalled then return end
 pcall(function()
-for n,_ in pairs(of) do restorefunction(workspace[n]) end
+if type(restorefunction)=="function" then restorefunction(game,"__namecall") end
 end)
-end
-of={}
-ri=false
+saInstalled=false
 end
 local knifeConn=nil
 local inKnife=false
@@ -515,11 +363,11 @@ if #targets>0 then
 local t=targets[math.random(1,#targets)]
 local tr=t.Character:FindFirstChild("HumanoidRootPart")
 local origin=r.CFrame
-pcall(function() r.CFrame=tr.CFrame*CFrame.new(0,0,2) end)
-wt(0.05)
-pcall(function() knife:Activate() end)
-wt(0.1)
-pcall(function() r.CFrame=origin end)
+safe(function() r.CFrame=tr.CFrame*CFrame.new(0,0,2) end)
+wait(0.05)
+safe(function() knife:Activate() end)
+wait(0.1)
+safe(function() r.CFrame=origin end)
 end
 end
 inKnife=false
@@ -527,15 +375,16 @@ end)
 end
 local function ssa(o)
 if o then
-local a=imh()
-local b=inh()
-local c=irh()
+local ok=installSA()
 setupKnife()
-return a or b or c
+if not ok then
+pcall(function()
+sgui:SetCore("SendNotification",{Title="X-SCRIPT",Text="Tu executor no soporta Silent Aim",Duration=4})
+end)
+end
+return ok
 else
-rmh()
-rnh()
-rrh()
+removeSA()
 clearKnife()
 at=nil
 return true
@@ -545,14 +394,17 @@ local function flingTarget(tr)
 local r=gr()
 if not r then return end
 local origin=r.CFrame
-pcall(function() r.CFrame=tr.CFrame end)
-local bv=Instance.new("BodyVelocity")
+safe(function() r.CFrame=tr.CFrame end)
+local bv=nil
+pcall(function()
+bv=Instance.new("BodyVelocity")
 bv.MaxForce=Vector3.new(1e6,1e6,1e6)
 bv.Velocity=Vector3.new(math.random(-50,50),80,math.random(-50,50))
 bv.Parent=r
-wt(0.2)
-pcall(function() bv:Destroy() end)
-pcall(function() r.CFrame=origin end)
+end)
+wait(0.2)
+pcall(function() if bv then bv:Destroy() end end)
+safe(function() r.CFrame=origin end)
 end
 local function fkTick()
 if not cfg.cb.fk then return end
@@ -581,13 +433,13 @@ if p~=lp and p.Character then
 local tr=p.Character:FindFirstChild("HumanoidRootPart")
 local th=fbc(p.Character,"Humanoid")
 if tr and th and th.Health>0 then
-pcall(function() r.CFrame=tr.CFrame*CFrame.new(0,0,2) end)
-pcall(function() k:Activate() end)
-wt(0.01)
+safe(function() r.CFrame=tr.CFrame*CFrame.new(0,0,2) end)
+safe(function() k:Activate() end)
+wait(0.01)
 end
 end
 end
-pcall(function() r.CFrame=o end)
+safe(function() r.CFrame=o end)
 end
 local fn={"coin"}
 local wn={"gun","revolver","pistol"}
@@ -622,9 +474,9 @@ local n=o.Name:lower()
 if mn(n,fn) and not iip(o) then
 local p=gip(o)
 if p then
-pcall(function() r.CFrame=CFrame.new(p.Position+Vector3.new(0,1,0)) end)
-pcall(function() h:MoveTo(p.Position) end)
-wt(0.05)
+safe(function() r.CFrame=CFrame.new(p.Position+Vector3.new(0,1,0)) end)
+safe(function() h:MoveTo(p.Position) end)
+wait(0.05)
 end
 end
 end
@@ -634,9 +486,9 @@ local function pw(p)
 local r=gr()
 if not r then return false end
 local o=r.CFrame
-pcall(function() r.CFrame=p.CFrame end)
-wt(0.2)
-pcall(function() r.CFrame=o end)
+safe(function() r.CFrame=p.CFrame end)
+wait(0.2)
+safe(function() r.CFrame=o end)
 return true
 end
 local function ws()
@@ -668,26 +520,20 @@ if cfg.fm.cn then pcall(cs) end
 end
 rs.RenderStepped:Connect(function()
 if not alive then return end
-local ok,err=pcall(function()
-hf()
-hs()
-safeMode()
-end)
-if not ok then once("move",err) end
+pcall(function() hf() hs() safeMode() end)
 end)
 rs.Stepped:Connect(function()
 if not alive then return end
-local ok,err=pcall(hn)
-if not ok then once("noclip",err) end
+pcall(hn)
 end)
 local function lpp(iv,k,f)
-sp(function()
+local co=coroutine.create(function()
 while alive do
-wt(iv)
-local ok,err=pcall(f)
-if not ok then once(k,err) end
+wait(iv)
+pcall(f)
 end
 end)
+coroutine.resume(co)
 end
 lpp(0.25,"esp",ue)
 lpp(0.1,"farm",ft)
@@ -702,26 +548,26 @@ if pa then i.Parent=pa end
 return i
 end
 local vp=cam.ViewportSize
-local W=clamp(vp.X*0.52,300,520)
-local H=clamp(vp.Y*0.62,230,400)
+local W=math.max(300,math.min(520,vp.X*0.52))
+local H=math.max(230,math.min(400,vp.Y*0.62))
 local ui=mk("ScreenGui",{Name="XScript",ResetOnSpawn=false,ZIndexBehavior=Enum.ZIndexBehavior.Sibling},cg)
 local mn=mk("Frame",{
 Size=UDim2.fromOffset(W,H),
 Position=UDim2.new(0.5,-W/2,0.5,-H/2),
 BackgroundColor3=th.Bg,
 BorderSizePixel=0,
-ClipsDescendants=true
+ClipsDescendants=true,
+Active=true,
+Draggable=true
 },ui)
 mk("UICorner",{CornerRadius=UDim.new(0,10)},mn)
-mk("UIStroke",{Color=th.St,Thickness=1},mn)
+pcall(function() mk("UIStroke",{Color=th.St,Thickness=1},mn) end)
 local tb=mk("Frame",{Size=UDim2.new(1,0,0,36),BackgroundColor3=th.Pn,BorderSizePixel=0},mn)
 mk("UICorner",{CornerRadius=UDim.new(0,10)},tb)
 mk("Frame",{Size=UDim2.new(1,0,0,12),Position=UDim2.new(0,0,1,-12),BackgroundColor3=th.Pn,BorderSizePixel=0},tb)
 local ib=mk("Frame",{Size=UDim2.new(0,26,0,26),Position=UDim2.new(0,6,0.5,-13),BackgroundColor3=th.Pl,BorderSizePixel=0},tb)
 mk("UICorner",{CornerRadius=UDim.new(0,6)},ib)
-local io=false
-if logo~=0 then
-io=pcall(function()
+pcall(function()
 local i=Instance.new("ImageLabel")
 i.Size=UDim2.new(1,0,1,0)
 i.BackgroundTransparency=1
@@ -729,10 +575,6 @@ i.Image="rbxassetid://"..tostring(logo)
 i.ScaleType=Enum.ScaleType.Stretch
 i.Parent=ib
 end)
-end
-if not io then
-mk("TextLabel",{Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,Text="X",TextColor3=th.Ac,Font=Enum.Font.GothamBlack,TextSize=16},ib)
-end
 mk("TextLabel",{
 Size=UDim2.new(1,-140,1,0),
 Position=UDim2.new(0,38,0,0),
@@ -768,7 +610,7 @@ Visible=false,
 ZIndex=10
 },ui)
 mk("UICorner",{CornerRadius=UDim.new(0,10)},cf)
-mk("UIStroke",{Color=th.St,Thickness=1},cf)
+pcall(function() mk("UIStroke",{Color=th.St,Thickness=1},cf) end)
 mk("TextLabel",{
 Size=UDim2.new(1,-20,0,40),
 Position=UDim2.new(0,10,0,8),
@@ -813,10 +655,11 @@ Position=UDim2.new(0,10,0.5,-25),
 BackgroundColor3=th.Pl,
 Text="",
 BorderSizePixel=0,
-AutoButtonColor=false
+AutoButtonColor=false,
+Active=true,
+Draggable=true
 },iconGui)
 mk("UICorner",{CornerRadius=UDim.new(0,10)},iconBtn)
-if logo~=0 then
 pcall(function()
 local i=Instance.new("ImageLabel")
 i.Size=UDim2.new(1,0,1,0)
@@ -825,30 +668,7 @@ i.Image="rbxassetid://"..tostring(logo)
 i.ScaleType=Enum.ScaleType.Stretch
 i.Parent=iconBtn
 end)
-else
-mk("TextLabel",{Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,Text="X",TextColor3=th.Ac,Font=Enum.Font.GothamBlack,TextSize=28},iconBtn)
-end
-local idrag=false,imoved=false,iof=Vector2.new(0,0),iinp=nil
-iconBtn.InputBegan:Connect(function(i)
-if i.UserInputType==Enum.UserInputType.Touch or i.UserInputType==Enum.UserInputType.MouseButton1 then
-idrag=true
-imoved=false
-iinp=i
-iof=Vector2.new(i.Position.X-iconBtn.AbsolutePosition.X,i.Position.Y-iconBtn.AbsolutePosition.Y)
-end
-end)
-uis.InputChanged:Connect(function(i)
-if idrag and i==iinp then
-local np=Vector2.new(i.Position.X-iof.X,i.Position.Y-iof.Y)
-if (np-Vector2.new(iconBtn.AbsolutePosition.X,iconBtn.AbsolutePosition.Y)).Magnitude>6 then imoved=true end
-iconBtn.Position=UDim2.fromOffset(np.X,np.Y)
-end
-end)
-uis.InputEnded:Connect(function(i)
-if i==iinp then idrag=false iinp=nil end
-end)
 iconBtn.MouseButton1Click:Connect(function()
-if imoved then return end
 mn.Visible=true
 iconGui.Enabled=false
 end)
@@ -870,30 +690,6 @@ pcall(function() if iconGui then iconGui:Destroy() end end)
 pcall(function() es:Destroy() end)
 pcall(function() fp:Destroy() end)
 end)
-local di=nil
-local doff=Vector2.new(0,0)
-local function inb(p,o)
-local a=o.AbsolutePosition
-local s=o.AbsoluteSize
-return p.X>=a.X and p.X<=a.X+s.X and p.Y>=a.Y and p.Y<=a.Y+s.Y
-end
-uis.InputBegan:Connect(function(i,pr)
-if pr then return end
-if i.UserInputType==Enum.UserInputType.Touch or i.UserInputType==Enum.UserInputType.MouseButton1 then
-if inb(i.Position,tb) and not inb(i.Position,cb) and not inb(i.Position,mb) then
-di=i
-doff=Vector2.new(i.Position.X-mn.AbsolutePosition.X,i.Position.Y-mn.AbsolutePosition.Y)
-end
-end
-end)
-uis.InputChanged:Connect(function(i)
-if i==di then
-mn.Position=UDim2.fromOffset(i.Position.X-doff.X,i.Position.Y-doff.Y)
-end
-end)
-uis.InputEnded:Connect(function(i)
-if i==di then di=nil end
-end)
 local ts2=mk("ScrollingFrame",{Size=UDim2.new(1,-8,0,32),Position=UDim2.new(0,4,0,40),BackgroundTransparency=1,ScrollBarThickness=0,BorderSizePixel=0},mn)
 local sl=mk("UIListLayout",{FillDirection=Enum.FillDirection.Horizontal,Padding=UDim.new(0,5)},ts2)
 sl:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
@@ -914,7 +710,7 @@ TextSize=14,
 BorderSizePixel=0
 },fp)
 mk("UICorner",{CornerRadius=UDim.new(0,10)},b)
-mk("UIStroke",{Color=th.St,Thickness=1},b)
+pcall(function() mk("UIStroke",{Color=th.St,Thickness=1},b) end)
 b.InputBegan:Connect(function(i)
 if i.UserInputType==Enum.UserInputType.Touch or i.UserInputType==Enum.UserInputType.MouseButton1 then fi[f]=true end
 end)
@@ -1016,16 +812,7 @@ local flp=ct("Fling","FLING USER")
 local ip=ct("Info","INFO")
 at2(cp,"Silent Aim",false,function(v)
 cfg.cb.sa=v
-if v then
-local ok=ssa(true)
-if not ok then
-pcall(function()
-sgui:SetCore("SendNotification",{Title="X-SCRIPT",Text="Tu executor no soporta hooks",Duration=4})
-end)
-end
-else
-ssa(false)
-end
+ssa(v)
 end)
 at2(cp,"Kill All",false,function(v) cfg.cb.ka=v end)
 at2(cp,"Fling Killer",false,function(v) cfg.cb.fk=v end)
@@ -1055,7 +842,7 @@ ScrollBarThickness=3,
 ScrollBarImageColor3=th.Ac,
 BorderSizePixel=0
 },flp)
-local fly2=mk("UIListLayout",{Padding=UDim.new(0,5)},flist)
+mk("UIListLayout",{Padding=UDim.new(0,5)},flist)
 local function buildFlingList()
 for _,ch in ipairs(flist:GetChildren()) do
 if ch:IsA("TextButton") then ch:Destroy() end
@@ -1114,11 +901,10 @@ btn.MouseButton1Click:Connect(callback)
 return btn
 end
 addButton(ip,"Discord Server",function()
-if setclipboard then
-setclipboard("https://discord.gg/rTdZxp9Djf")
 pcall(function()
-sgui:SetCore("SendNotification",{Title="X-SCRIPT",Text="Link copiado al portapapeles",Duration=3})
+if setclipboard then setclipboard("https://discord.gg/rTdZxp9Djf") end
+sgui:SetCore("SendNotification",{Title="X-SCRIPT",Text="Link copiado",Duration=3})
 end)
-end
 end)
 mk("TextLabel",{Size=UDim2.new(1,-4,0,20),BackgroundTransparency=1,Text="Credits: X Hub Team",TextColor3=th.Tx,Font=Enum.Font.Gotham,TextSize=12,TextXAlignment=Enum.TextXAlignment.Left},ip)
+print("X-SCRIPT cargado OK")
