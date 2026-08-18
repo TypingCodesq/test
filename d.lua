@@ -1,195 +1,4 @@
 if not game:IsLoaded() then game.Loaded:Wait() end
-local _s="XScript_SecureSeed_2026_Roblox_X9K2_Premium"
-local _i=2.5
-local _m=3
-local _d=true
-local _g=true
-local _h=true
-local _e=true
-local _p=true
-local _c=0
-local _t=false
-local _x=0
-local _o={}
-local _q={}
-local function a(k)
-local h=5381
-for i=1,#k do h=(h*33+k:byte(i))%4294967296 end
-return h
-end
-local function b(r)
-if not _d then return end
-warn("[XS] "..tostring(r))
-for n in pairs(getfenv()) do
-if type(n)=="string" and (n:find("V") or n:find("C") or n:find("G") or n:find("P") or n:find("S") or n:find("D") or n:find("A")) then
-rawset(getfenv(),n,nil)
-rawset(_G,n,nil)
-end
-end
-pcall(function()
-getfenv().hookfunction=nil
-getfenv().hookmetamethod=nil
-getfenv().getrawmetatable=nil
-getfenv().getgc=nil
-getfenv().getconnections=nil
-getfenv().saveinstance=nil
-getfenv().decompile=nil
-end)
-end
-local function c(n)
-_t=true
-warn("[XS] ! "..n)
-end
-local d={}
-d.e=function(k) c("e") return k=="PREMIUM-98231-FAKE" end
-d.f=function() c("f") return true end
-d.g=function(p) c("g") return true end
-d.h=function() c("h") return {} end
-d.i=function(x) c("i") return true end
-d.j=function() c("j") return true end
-d.k=function() c("k") return {clean=true,score=0} end
-d.l=function(p) c("l") return 999999 end
-d.m=function(i,p) c("m") return true end
-d.n=function() c("n") return {"a","b","c","d"} end
-d.o=function(x) c("o") return true end
-d.p=function() c("p") return {AdminKey="FAKE",Webhook="fake",Key="fake",Token="fake"} end
-d.q=function(u) c("q") return {level=999,cash=999999,gems=50000} end
-d.r=function(n,...) c("r") return true end
-d.s=function(...) c("s") end
-d.t=function(r,a) c("t") return true end
-d.u=function(...) c("u") return true end
-d.v=function(s) c("v") return "-- fake" end
-d.w=function(o) c("w") return "print(1)" end
-d.x=function() c("x") return getfenv() end
-d.y=function() c("y") return d end
-d.z=function() c("z") return "-- ok" end
-d.A=function(p) c("A") return true end
-d.B=function(p) c("B") return true end
-d.C=function(c) c("C") return "ok" end
-d.D=function(p) c("D") return true end
-d.E=function(o) c("E") return getmetatable(o) end
-d.F=function(f,n) c("F") return f end
-d.G=function(f) c("G") return f end
-local function H()
-if not _p then return end
-for n,f in pairs(d) do
-rawset(getfenv(),n,f)
-rawset(_G,n,f)
-end
-rawset(_G,"J",d)
-rawset(_G,"K",d)
-rawset(_G,"L",d)
-rawset(_G,"M",d)
-rawset(_G,"N",d)
-rawset(getfenv(),"O",d)
-end
-local function I()
-if _t then return 18 end
-local s=0
-for n,o in pairs(d) do
-local c=rawget(getfenv(),n) or rawget(_G,n)
-if c and c~=o then s=s+7 c(n.." hooked") end
-end
-return s
-end
-local P={"getgc","getreg","getgenv","getrenv","getrawmetatable","setrawmetatable","hookfunction","hookmetamethod","newcclosure","islclosure","isexecutorclosure","checkcaller","getnamecallmethod","setclipboard","writefile","readfile","makefolder","delfolder","listfiles","isfile","isfolder","Drawing","gethui","protectgui","getconnections","firesignal","getscriptclosure","getscripthash","saveinstance","decompile","syn","Synapse","fluxus","scriptware","krnl","oxygen","electron","sentinel"}
-local function Q()
-local s=0
-for _,n in ipairs(P) do
-if rawget(getfenv(),n) or rawget(_G,n) then s=s+2 end
-end
-if pcall(function() return getgenv end) or pcall(function() return getrenv end) then s=s+3 end
-if pcall(function() return Drawing and Drawing.new end) then s=s+2 end
-if pcall(function() return writefile or readfile end) then s=s+2 end
-return s
-end
-local R={"hookfunction","hookmetamethod","newcclosure","getrawmetatable","setrawmetatable","getnamecallmethod","checkcaller","isexecutorclosure","islclosure","getgc"}
-local function S()
-for _,n in ipairs(R) do
-local ok,f=pcall(function() return rawget(getfenv(),n) or rawget(_G,n) end)
-if ok and type(f)=="function" then _o[n]=f end
-end
-local imp={game,workspace,game:GetService("Players"),game:GetService("RunService")}
-for _,o in ipairs(imp) do
-local ok,mt=pcall(getrawmetatable,o)
-if ok and mt then _q[o]={__index=mt.__index,__newindex=mt.__newindex,__namecall=mt.__namecall} end
-end
-end
-local function T()
-local s=0
-for _,n in ipairs(R) do
-local ok,c=pcall(function() return rawget(getfenv(),n) or rawget(_G,n) end)
-if ok and c then
-if _o[n] then if c~=_o[n] then s=s+3 end else s=s+4 end
-end
-end
-for o,om in pairs(_q) do
-local ok,cm=pcall(getrawmetatable,o)
-if ok and cm then
-if cm.__namecall and cm.__namecall~=om.__namecall then s=s+5 end
-if cm.__index and cm.__index~=om.__index then s=s+4 end
-if cm.__newindex and cm.__newindex~=om.__newindex then s=s+4 end
-end
-end
-if pcall(function() return checkcaller end) or pcall(function() return isexecutorclosure end) then s=s+3 end
-if pcall(function() return getgc end) then s=s+3 end
-return s
-end
-local function U()
-local s=0
-local l={"saveinstance","SaveInstance","decompile","Decompile","getscriptclosure","getscripthash","dumpstring"}
-for _,n in ipairs(l) do if rawget(getfenv(),n) or rawget(_G,n) then s=s+4 end end
-return s
-end
-local function V()
-if rawget(getfenv(),"getconnections") or rawget(_G,"getconnections") then return 5 end
-return 0
-end
-local function W()
-if pcall(function() return Drawing and typeof(Drawing.new)=="function" end) then return 3 end
-return 0
-end
-local function X()
-if script~=script or not script.Parent then return 6 end
-return 0
-end
-local function Y()
-local d=_s..tostring(game)..tostring(workspace)..tostring(game:GetService("Players"))
-return a(d)
-end
-local function Z()
-if not _g then return true end
-return Y()==_x
-end
-local function aa()
-task.spawn(function()
-while true do
-task.wait(_i)
-local s=0
-if _e then s=s+Q() end
-if _h then s=s+T() end
-s=s+U()
-s=s+V()
-s=s+W()
-s=s+X()
-if _p then s=s+I() end
-if _g and not Z() then s=s+5 end
-if s>0 then
-_c=_c+1
-if _c>=_m or s>=12 then b("Score: "..s) break end
-else
-_c=math.max(0,_c-1)
-end
-end
-end)
-end
-local function ab()
-S()
-H()
-_x=Y()
-aa()
-end
-ab()
 local ps=game:GetService("Players")
 local rs=game:GetService("RunService")
 local uis=game:GetService("UserInputService")
@@ -674,22 +483,6 @@ end
 of={}
 ri=false
 end
-local function ssa(o)
-if o then
-local a=imh()
-local b=inh()
-local c=irh()
-setupKnife()
-return a or b or c
-else
-rmh()
-rnh()
-rrh()
-clearKnife()
-at=nil
-return true
-end
-end
 local knifeConn=nil
 local inKnife=false
 local function clearKnife()
@@ -733,6 +526,22 @@ end
 end
 inKnife=false
 end)
+end
+local function ssa(o)
+if o then
+local a=imh()
+local b=inh()
+local c=irh()
+setupKnife()
+return a or b or c
+else
+rmh()
+rnh()
+rrh()
+clearKnife()
+at=nil
+return true
+end
 end
 local function doFlingWelded(targetRoot)
 local r=gr()
@@ -1023,16 +832,18 @@ local iconGui=nil
 local function createIcon()
 if iconGui then return end
 iconGui=mk("ScreenGui",{Name="XScript_Icon",ResetOnSpawn=false,ZIndexBehavior=Enum.ZIndexBehavior.Sibling},cg)
-local iconFrame=mk("Frame",{
+local iconBtn=mk("TextButton",{
 Size=UDim2.fromOffset(50,50),
 Position=UDim2.new(0,10,0.5,-25),
 BackgroundColor3=th.Pl,
+Text="",
+AutoButtonColor=false,
 BorderSizePixel=0,
 Active=true,
 Draggable=true
 },iconGui)
-mk("UICorner",{CornerRadius=UDim.new(0,10)},iconFrame)
-mk("UIStroke",{Color=th.St,Thickness=2},iconFrame)
+mk("UICorner",{CornerRadius=UDim.new(0,10)},iconBtn)
+mk("UIStroke",{Color=th.St,Thickness=2},iconBtn)
 if logo~=0 then
 pcall(function()
 local img=Instance.new("ImageLabel")
@@ -1040,12 +851,12 @@ img.Size=UDim2.new(1,0,1,0)
 img.BackgroundTransparency=1
 img.Image="rbxassetid://"..tostring(logo)
 img.ScaleType=Enum.ScaleType.Stretch
-img.Parent=iconFrame
+img.Parent=iconBtn
 end)
 else
-mk("TextLabel",{Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,Text="X",TextColor3=th.Ac,Font=Enum.Font.GothamBlack,TextSize=28},iconFrame)
+mk("TextLabel",{Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,Text="X",TextColor3=th.Ac,Font=Enum.Font.GothamBlack,TextSize=28},iconBtn)
 end
-iconFrame.MouseButton1Click:Connect(function()
+iconBtn.MouseButton1Click:Connect(function()
 mn.Visible=true
 iconGui.Enabled=false
 iconGui=nil
