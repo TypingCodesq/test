@@ -96,8 +96,7 @@ local function sm()
 if not alive then return end
 local r=gr()
 local h=gh()
-if not r then return end
-if not h then return end
+if not r or not h then return end
 if r.Position.Y<-200 then sf(function() r.CFrame=CFrame.new(0,50,0) end) end
 if not cfg.cb.ad then return end
 if not ra() then return end
@@ -107,15 +106,15 @@ local kr=nil
 if k.Character then kr=k.Character:FindFirstChild("HumanoidRootPart") end
 if not kr then return end
 local d=(kr.Position-r.Position).Magnitude
-if d<6 then
+if d<8 then
 local kc=k.Character
 if kc then
 for _,t in ipairs(kc:GetChildren()) do
 if t:IsA("Tool") then
 if t.Name:lower():find("knife") then
-sf(function()
-r.CFrame=CFrame.new(r.Position+Vector3.new(math.random(-25,25),8,math.random(-25,25)))
-end)
+local tp=(r.Position-kr.Position).Unit
+local perp=Vector3.new(-tp.Z,0,tp.X)
+sf(function() r.CFrame=r.CFrame+perp*8 end)
 return
 end
 end
@@ -129,13 +128,8 @@ if kh then
 local tp=(r.Position-kh.Position).Unit
 local dot=tp:Dot(kh.CFrame.LookVector)
 if dot>0.9 then
-sf(function()
-local h2=gh()
-if h2 then
-local pp=Vector3.new(-tp.Z,0,tp.X)
-h2:MoveTo(r.Position+pp*12)
-end
-end)
+local perp=Vector3.new(-tp.Z,0,tp.X)
+sf(function() r.CFrame=r.CFrame+perp*5 end)
 end
 end
 end
@@ -343,6 +337,7 @@ at=nil
 end
 local sai=false
 local oldidx=nil
+local oldnamecall=nil
 local function aimHook(s,k)
 if s==ms then
 if k=="Hit" then
@@ -370,9 +365,21 @@ return oldidx[k]
 end
 return nil
 end
+local function redir(o,d)
+local r=gr()
+if not r then return d end
+if (o-r.Position).Magnitude>25 then return d end
+local t=at
+if not t then return d end
+if not t.Parent then return d end
+local pos=t.Position+(av*0.1)
+local dd=pos-o
+if dd.Magnitude<0.01 then return d end
+return dd.Unit*math.min(dd.Magnitude+1,999)
+end
 local function isa()
 if sai then return true end
-local ok=pcall(function()
+local ok1=pcall(function()
 if type(getrawmetatable)~="function" then error("a") end
 if type(setreadonly)~="function" then error("b") end
 local mt=getrawmetatable(game)
@@ -387,7 +394,30 @@ end
 setreadonly(mt,true)
 sai=true
 end)
-return ok
+local ok2=pcall(function()
+if type(hookmetamethod)=="function" and type(getnamecallmethod)=="function" then
+oldnamecall=hookmetamethod(game,"__namecall",function(s,...)
+if cfg.cb.sa and s==workspace then
+local m=getnamecallmethod()
+if m=="Raycast" then
+local a={...}
+if type(a[1])=="userdata" and type(a[2])=="userdata" then
+a[2]=redir(a[1],a[2])
+return oldnamecall(s,unpack(a))
+end
+elseif m=="FindPartOnRay" or m=="FindPartOnRayWithIgnoreList" or m=="FindPartOnRayWithWhitelist" then
+local a={...}
+if type(a[1])=="userdata" then
+a[1]=Ray.new(a[1].Origin,redir(a[1].Origin,a[1].Direction))
+return oldnamecall(s,unpack(a))
+end
+end
+end
+return oldnamecall(s,...)
+end)
+end
+end)
+return ok1 or ok2
 end
 local function rsaM()
 if not sai then return end
@@ -400,69 +430,11 @@ mt.__index=oldidx
 setreadonly(mt,true)
 end
 end
+if type(restorefunction)=="function" then
+restorefunction(game,"__namecall")
+end
 end)
 sai=false
-end
-local hookedList={}
-local function redir(o,d)
-local r=gr()
-if not r then return d end
-if (o-r.Position).Magnitude>15 then return d end
-local t=at
-if not t then return d end
-if not t.Parent then return d end
-local pos=t.Position+(av*0.1)
-local dd=pos-o
-if dd.Magnitude<0.01 then return d end
-return dd.Unit*math.min(dd.Magnitude+1,999)
-end
-local function irh()
-if type(hookfunction)~="function" then return false end
-local ok=pcall(function()
-if type(workspace.Raycast)=="function" then
-local o1=hookfunction(workspace.Raycast,function(o,d,...)
-if cfg.cb.sa then d=redir(o,d) end
-return o1(o,d,...)
-end)
-table.insert(hookedList,"Raycast")
-end
-if type(workspace.FindPartOnRay)=="function" then
-local o2=hookfunction(workspace.FindPartOnRay,function(ray,...)
-if cfg.cb.sa then
-if type(ray)=="userdata" then ray=Ray.new(ray.Origin,redir(ray.Origin,ray.Direction)) end
-end
-return o2(ray,...)
-end)
-table.insert(hookedList,"FindPartOnRay")
-end
-if type(workspace.FindPartOnRayWithIgnoreList)=="function" then
-local o3=hookfunction(workspace.FindPartOnRayWithIgnoreList,function(ray,...)
-if cfg.cb.sa then
-if type(ray)=="userdata" then ray=Ray.new(ray.Origin,redir(ray.Origin,ray.Direction)) end
-end
-return o3(ray,...)
-end)
-table.insert(hookedList,"FindPartOnRayWithIgnoreList")
-end
-if type(workspace.FindPartOnRayWithWhitelist)=="function" then
-local o4=hookfunction(workspace.FindPartOnRayWithWhitelist,function(ray,...)
-if cfg.cb.sa then
-if type(ray)=="userdata" then ray=Ray.new(ray.Origin,redir(ray.Origin,ray.Direction)) end
-end
-return o4(ray,...)
-end)
-table.insert(hookedList,"FindPartOnRayWithWhitelist")
-end
-end)
-return ok
-end
-local function rrh()
-pcall(function()
-if type(restorefunction)=="function" then
-for _,n in ipairs(hookedList) do restorefunction(workspace[n]) end
-end
-end)
-hookedList={}
 end
 local kc=nil
 local ik=false
@@ -515,18 +487,16 @@ end)
 end
 local function ssa(o)
 if o then
-local a=isa()
-local b=irh()
+local ok=isa()
 sk()
-if not a and not b then
+if not ok then
 pcall(function()
 sgui:SetCore("SendNotification",{Title="X-SCRIPT",Text="Silent Aim no soportado",Duration=4})
 end)
 end
-return a or b
+return ok
 else
 rsaM()
-rrh()
 ck()
 at=nil
 return true
@@ -536,21 +506,35 @@ local function doFling(tr)
 local r=gr()
 if not r then return end
 local oc=r.CFrame
-local m=0.1
+local parts={}
+for i=1,8 do
+local p=Instance.new("Part")
+p.Size=Vector3.new(2,2,2)
+p.Transparency=1
+p.CanCollide=true
+p.Anchored=false
+p.Massless=true
+p.Parent=workspace
+local w=Instance.new("WeldConstraint")
+w.Part0=r
+w.Part1=p
+w.Parent=p
+p.CFrame=r.CFrame*CFrame.Angles(0,math.pi*2*i/8,0)*CFrame.new(0,0,3)
+table.insert(parts,{p=p,w=w})
+end
 local t0=tick()
 pcall(function()
-while tick()-t0<0.5 do
+while tick()-t0<0.6 do
 rs.Heartbeat:Wait()
 if not tr.Parent then break end
-r.CFrame=tr.CFrame
-r.CanCollide=true
-local v=r.Velocity
-r.Velocity=v*10000+Vector3.new(0,10000,0)
-rs.Stepped:Wait()
-r.Velocity=v+Vector3.new(0,m,0)
-m=-m
+local a=(tick()-t0)*80
+r.CFrame=tr.CFrame*CFrame.Angles(0,a,0)
+r.Velocity=Vector3.new(math.random(-800,800),math.random(500,1500),math.random(-800,800))
 end
 end)
+for _,pt in ipairs(parts) do
+pcall(function() pt.w:Destroy() pt.p:Destroy() end)
+end
 pcall(function() r.Velocity=Vector3.new(0,0,0) end)
 pcall(function() r.CFrame=oc end)
 end
@@ -571,8 +555,7 @@ end
 local function kt()
 local r=gr()
 local c=gc()
-if not r then return end
-if not c then return end
+if not r or not c then return end
 local k=nil
 for _,t in ipairs(c:GetChildren()) do
 if t:IsA("Tool") then
@@ -629,7 +612,6 @@ if o:IsA("Tool") then return o:FindFirstChild("Handle") end
 return nil
 end
 local coinTarget=nil
-local coinTimer=0
 local coinNoclip=false
 local function cm()
 if not alive then return end
@@ -646,8 +628,6 @@ return
 end
 r.CanCollide=false
 coinNoclip=true
-if tick()-coinTimer>0.1 then
-coinTimer=tick()
 coinTarget=nil
 local bd=math.huge
 for _,o in ipairs(workspace:GetDescendants()) do
@@ -662,12 +642,11 @@ end
 end
 end
 end
-end
 if coinTarget then
 local tp=Vector3.new(coinTarget.Position.X, coinTarget.Position.Y-2, coinTarget.Position.Z)
 local d=tp-r.Position
 if d.Magnitude>0.5 then
-r.CFrame=r.CFrame+d.Unit*math.min(d.Magnitude,3)
+r.CFrame=r.CFrame+d.Unit*math.min(d.Magnitude,8)
 end
 end
 end
@@ -684,8 +663,7 @@ end
 local function ws()
 local r=gr()
 local h=gh()
-if not r then return end
-if not h then return end
+if not r or not h then return end
 if h.Health<=0 then return end
 local pk=false
 local gd=workspace:FindFirstChild("GunDrop",true)
