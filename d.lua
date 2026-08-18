@@ -181,8 +181,16 @@ if ch then hd=ch:FindFirstChild("Head") end
 local rt=nil
 if ch then rt=ch:FindFirstChild("HumanoidRootPart") end
 local al=false
-if cfg.es.On and ch and hd and rt and hm then
+if cfg.es.On then
+if ch then
+if hd then
+if rt then
+if hm then
 if hm.Health>0 then al=true end
+end
+end
+end
+end
 end
 if al then
 local r=grl(p)
