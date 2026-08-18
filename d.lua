@@ -1,5 +1,4 @@
 if not game:IsLoaded() then game.Loaded:Wait() end
-local function OR(a,b) if a then return a else return b end end
 local ps=game:GetService("Players")
 local rs=game:GetService("RunService")
 local uis=game:GetService("UserInputService")
@@ -333,8 +332,8 @@ local sai=false
 local function isa()
 if sai then return true end
 local ok=pcall(function()
-if type(hookmetamethod)~="function" then
-if type(getnamecallmethod)~="function" then
+if type(hookmetamethod)~="function" then error("no hook") end
+if type(getnamecallmethod)~="function" then error("no hook") end
 local old=hookmetamethod(game,"__namecall",function(s,...)
 if cfg.cb.sa then
 if s==workspace then
@@ -393,12 +392,6 @@ end
 return old(s,...)
 end)
 sai=true
-else
-error("no hook")
-end
-else
-error("no hook")
-end
 end)
 return ok
 end
@@ -447,12 +440,12 @@ end
 if #tg>0 then
 local t=tg[math.random(1,#tg)]
 local tr=t.Character:FindFirstChild("HumanoidRootPart")
-local or=r.CFrame
+local oc=r.CFrame
 sf(function() r.CFrame=tr.CFrame*CFrame.new(0,0,2) end)
 wait(0.05)
 sf(function() k:Activate() end)
 wait(0.1)
-sf(function() r.CFrame=or end)
+sf(function() r.CFrame=oc end)
 end
 end
 ik=false
@@ -522,7 +515,7 @@ if t.Name:lower():find("knife") then k=t end
 end
 end
 if not k then return end
-local o=r.CFrame
+local oc=r.CFrame
 for _,p in ipairs(ps:GetPlayers()) do
 if not cfg.cb.ka then break end
 if p~=lp then
@@ -541,7 +534,7 @@ end
 end
 end
 end
-sf(function() r.CFrame=o end)
+sf(function() r.CFrame=oc end)
 end
 local fn={"coin"}
 local wn={"gun","revolver","pistol"}
@@ -595,10 +588,10 @@ local wc=nil
 local function pw(p)
 local r=gr()
 if not r then return false end
-local o=r.CFrame
+local oc=r.CFrame
 sf(function() r.CFrame=p.CFrame end)
 wait(0.2)
-sf(function() r.CFrame=o end)
+sf(function() r.CFrame=oc end)
 return true
 end
 local function ws()
