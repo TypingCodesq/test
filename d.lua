@@ -87,7 +87,7 @@ local function GetRole(player)
             if item:IsA("Tool") then
                 local n = item.Name:lower()
                 if n:find("knife") then return "Murderer" end
-                if n:find("gun") then return "Sheriff" end
+                if n == "gun" or n == "revolver" then return "Sheriff" end
             end
         end
     end
@@ -309,9 +309,12 @@ local function RefreshAim()
     local hasGun = false
     if char then
         for _, t in ipairs(char:GetChildren()) do
-            if t:IsA("Tool") and t.Name:lower():find("gun") then
-                hasGun = true
-                break
+            if t:IsA("Tool") then
+                local n = t.Name:lower()
+                if n == "gun" or n == "revolver" then
+                    hasGun = true
+                    break
+                end
             end
         end
     end
@@ -379,18 +382,60 @@ local function RemoveMouseHook()
     mtHooked = false
 end
 
+local ncInstalled = false
+local oldNamecall = nil
+
+local function InstallNamecallHook()
+    if type(hookmetamethod) ~= "function" or type(getnamecallmethod) ~= "function" then return false end
+    local ok = pcall(function()
+        oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+            if Config.Combat.SilentAim and self == workspace then
+                local t = AimTarget
+                if t and t.Parent then
+                    local m = getnamecallmethod()
+                    if m == "Raycast" then
+                        local args = { ... }
+                        if typeof(args[1]) == "Vector3" and typeof(args[2]) == "Vector3" then
+                            args[2] = AimDir(args[1], t.Position)
+                            return oldNamecall(self, unpack(args))
+                        end
+                    elseif m == "FindPartOnRay" or m == "FindPartOnRayWithIgnoreList" or m == "FindPartOnRayWithWhitelist" then
+                        local args = { ... }
+                        if typeof(args[1]) == "Ray" then
+                            local o = args[1].Origin
+                            args[1] = Ray.new(o, AimDir(o, t.Position))
+                            return oldNamecall(self, unpack(args))
+                        end
+                    end
+                end
+            end
+            return oldNamecall(self, ...)
+        end)
+        ncInstalled = true
+    end)
+    return ok and ncInstalled
+end
+
+local function RemoveNamecallHook()
+    if not ncInstalled then return end
+    if type(restorefunction) == "function" then
+        pcall(function() restorefunction(game, "__namecall") end)
+    end
+    ncInstalled = false
+end
+
 local rayHooksInstalled = false
 local oldFns = {}
 
 local function InstallRayHooks()
-    if type(hookfunction) ~= "function" or type(checkcaller) ~= "function" then return false end
+    if type(hookfunction) ~= "function" then return false end
     local ok = pcall(function()
         local targets = { "Raycast", "FindPartOnRay", "FindPartOnRayWithIgnoreList" }
         for _, name in ipairs(targets) do
             local fn = workspace[name]
             if type(fn) == "function" then
                 oldFns[name] = hookfunction(fn, function(...)
-                    if Config.Combat.SilentAim and not checkcaller() then
+                    if Config.Combat.SilentAim then
                         local t = AimTarget
                         if t and t.Parent then
                             local args = { ... }
@@ -433,10 +478,12 @@ end
 local function SetSilentAim(on)
     if on then
         local a = InstallMouseHook()
-        local b = InstallRayHooks()
-        return a or b
+        local b = InstallNamecallHook()
+        local c = InstallRayHooks()
+        return a or b or c
     else
         RemoveMouseHook()
+        RemoveNamecallHook()
         RemoveRayHooks()
         AimTarget = nil
         return true
@@ -480,13 +527,6 @@ local function MatchesNames(n, list)
     return false
 end
 
-local function MatchesExact(n, list)
-    for _, word in ipairs(list) do
-        if n == word then return true end
-    end
-    return false
-end
-
 local function IsInsidePlayer(obj)
     for _, player in ipairs(Players:GetPlayers()) do
         local char = player.Character
@@ -526,20 +566,32 @@ local function CoinSweep()
     end
 end
 
+local function PickupWeapon(part)
+    local root = GetRoot()
+    if not root then return end
+    local origin = root.CFrame
+    pcall(function() root.CFrame = part.CFrame end)
+    Wait(0.2)
+    pcall(function() root.CFrame = origin end)
+end
+
 local function WeaponSweep()
     local root = GetRoot()
     local hum = GetHumanoid()
     if not root or not hum or hum.Health <= 0 then return end
-    local origin = root.CFrame
+    local gd = workspace:FindFirstChild("GunDrop", true)
+    if gd and not IsInsidePlayer(gd) then
+        local part = GetItemPart(gd) or gd
+        PickupWeapon(part)
+        return
+    end
     for _, obj in ipairs(workspace:GetDescendants()) do
         if not Config.Farm.Weapons then return end
         local n = obj.Name:lower()
-        if MatchesExact(n, WEAPON_NAMES) and not IsInsidePlayer(obj) then
+        if MatchesNames(n, WEAPON_NAMES) and not IsInsidePlayer(obj) then
             local part = GetItemPart(obj)
-            if part and (part.Position - root.Position).Magnitude > 3 then
-                pcall(function() root.CFrame = CFrame.new(part.Position + Vector3.new(0, 1, 0)) end)
-                Wait(0.3)
-                pcall(function() root.CFrame = origin end)
+            if part then
+                PickupWeapon(part)
                 return
             end
         end
