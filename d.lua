@@ -11,6 +11,22 @@ local logo=134441968486950
 local alive=true
 local function sf(f) pcall(f) end
 pcall(function()
+local bad={"dumpstring","decompile","getscriptbytecode","getbytecode","decompilefunction","getfunctionbytecode","dumpfunction","disassemble","getdisassembly","getscripts","getloadedmodules","getscriptsbytecode","decompileclosure","getscriptclosure","dump"}
+for _,n in ipairs(bad) do
+pcall(function()
+if type(_G[n])=="function" then
+if type(hookfunction)=="function" then
+hookfunction(_G[n],function() return "" end)
+end
+end
+end)
+pcall(function() _G[n]=nil end)
+pcall(function()
+if getgenv then getgenv()[n]=nil end
+end)
+end
+end)
+pcall(function()
 for _,n in ipairs({"XScript","XScript_ESP","XScript_FlyPad","XScript_Icon"}) do
 local o=cg:FindFirstChild(n)
 if o then o:Destroy() end
@@ -23,7 +39,7 @@ Tx=Color3.fromRGB(178,188,235),Td=Color3.fromRGB(126,136,190),Kn=Color3.fromRGB(
 }
 local cfg={
 es={On=false,M=true,S=true,I=false,D=true},
-cb={sa=false,ka=false,fk=false,ad=true},
+cb={sa=false,ka=false,fk=false,ad=false},
 mv={fly=false,fs=60,nc=false,spd=false,sv=32,ij=false},
 fm={cn=false,wp=false}
 }
@@ -86,21 +102,21 @@ if not h then return end
 if r.Position.Y<-200 then sf(function() r.CFrame=CFrame.new(0,50,0) end) end
 if not cfg.cb.ad then return end
 if not ra() then return end
-if tick()-ld<0.3 then return end
+if tick()-ld<0.5 then return end
 local k=gk()
 if not k then return end
 local kr=nil
 if k.Character then kr=k.Character:FindFirstChild("HumanoidRootPart") end
 if not kr then return end
 local d=(kr.Position-r.Position).Magnitude
-if d<8 then
+if d<6 then
 local kc=k.Character
 if kc then
 for _,t in ipairs(kc:GetChildren()) do
 if t:IsA("Tool") then
 if t.Name:lower():find("knife") then
 sf(function()
-r.CFrame=CFrame.new(r.Position+Vector3.new(math.random(-30,30),10,math.random(-30,30)))
+r.CFrame=CFrame.new(r.Position+Vector3.new(math.random(-25,25),8,math.random(-25,25)))
 ld=tick()
 end)
 return
@@ -109,18 +125,18 @@ end
 end
 end
 end
-if d<100 then
+if d<80 then
 local kh=nil
 if k.Character then kh=k.Character:FindFirstChild("Head") end
 if kh then
 local tp=(r.Position-kh.Position).Unit
 local dot=tp:Dot(kh.CFrame.LookVector)
-if dot>0.8 then
+if dot>0.9 then
 sf(function()
 local h2=gh()
 if h2 then
 local pp=Vector3.new(-tp.Z,0,tp.X)
-h2:MoveTo(r.Position+pp*15)
+h2:MoveTo(r.Position+pp*12)
 ld=tick()
 end
 end)
@@ -458,19 +474,25 @@ return true
 end
 end
 local function doFling(tr)
-local r=gr()
-if not r then return end
-local oc=r.CFrame
-pcall(function() r.CFrame=tr.CFrame*CFrame.new(0,0,1) end)
+local p=Instance.new("Part")
+p.Size=Vector3.new(1.5,1.5,1.5)
+p.Transparency=1
+p.CanCollide=true
+p.Anchored=false
+p.TopSurface=Enum.SurfaceType.Smooth
+p.BottomSurface=Enum.SurfaceType.Smooth
+p.Parent=workspace
 local t0=tick()
 pcall(function()
-while tick()-t0<0.2 do
+while tick()-t0<0.4 do
 rs.Heartbeat:Wait()
-r.Velocity=r.Velocity*8+Vector3.new(0,800,0)
+if not tr.Parent then break end
+local a=(tick()-t0)*50
+p.CFrame=CFrame.new(tr.Position+Vector3.new(math.sin(a)*1.5,0.5,math.cos(a)*1.5))*CFrame.Angles(a,a*1.3,a*0.7)
+p.Velocity=Vector3.new(math.random(-400,400),math.random(300,700),math.random(-400,400))
 end
 end)
-pcall(function() r.Velocity=Vector3.new(0,0,0) end)
-pcall(function() r.CFrame=oc end)
+pcall(function() p:Destroy() end)
 end
 local function ft()
 if not cfg.cb.fk then return end
@@ -482,7 +504,7 @@ if k.Character then kr=k.Character:FindFirstChild("HumanoidRootPart") end
 if not kr then return end
 local r=gr()
 if not r then return end
-if (kr.Position-r.Position).Magnitude<6 then
+if (kr.Position-r.Position).Magnitude<8 then
 doFling(kr)
 end
 end
@@ -552,6 +574,8 @@ local h=gh()
 if not r then return end
 if not h then return end
 if h.Health<=0 then return end
+local best=nil
+local bd=math.huge
 for _,o in ipairs(workspace:GetDescendants()) do
 if not cfg.fm.cn then return end
 local n=o.Name:lower()
@@ -559,12 +583,14 @@ if mn(n,fn) then
 if not iip(o) then
 local p=gip(o)
 if p then
-sf(function() r.CFrame=CFrame.new(p.Position+Vector3.new(0,1,0)) end)
-sf(function() h:MoveTo(p.Position) end)
-wait(0.05)
+local d=(p.Position-r.Position).Magnitude
+if d<bd then bd=d best=p end
 end
 end
 end
+end
+if best then
+h:MoveTo(best.Position)
 end
 end
 local wc=nil
@@ -629,7 +655,7 @@ end)
 coroutine.resume(co)
 end
 lp(0.25,"esp",ue)
-lp(0.1,"farm",ft2)
+lp(0.15,"farm",ft2)
 lp(0.6,"wp",function() if cfg.fm.wp then ws() end end)
 lp(0.05,"ka",function() if cfg.cb.ka then kt() end end)
 lp(0.3,"fk",ft)
@@ -931,7 +957,7 @@ ssa(v)
 end)
 at2(cp,"Kill All",false,function(v) cfg.cb.ka=v end)
 at2(cp,"Fling Killer",false,function(v) cfg.cb.fk=v end)
-at2(cp,"Auto Dodge",true,function(v) cfg.cb.ad=v end)
+at2(cp,"Auto Dodge",false,function(v) cfg.cb.ad=v end)
 at2(ep,"Enable ESP",false,function(v) cfg.es.On=v end)
 at2(ep,"Show Murderer",true,function(v) cfg.es.M=v end)
 at2(ep,"Show Sheriff",true,function(v) cfg.es.S=v end)
