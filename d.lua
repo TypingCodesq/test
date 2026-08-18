@@ -41,7 +41,7 @@ local THEME = {
 
 local Config = {
     ESP = { Enabled = false, Murderer = true, Sheriff = true, Innocent = false, Distance = true },
-    Combat = { SilentAim = false, KillAll = false },
+    Combat = { SilentAim = false, KillAll = false, Rapid = false },
     Move = { Fly = false, FlySpeed = 60, Noclip = false, Speed = false, SpeedValue = 32, InfJump = false },
     Farm = { Coins = false, Weapons = false },
     Visuals = { FullBright = false }
@@ -299,6 +299,7 @@ local function AimDir(origin, targetPos)
 end
 
 local AimTarget = nil
+local AimVel = Vector3.new(0, 0, 0)
 
 local function RefreshAim()
     if not Config.Combat.SilentAim then
@@ -325,10 +326,19 @@ local function RefreshAim()
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and GetRole(p) == "Murderer" then
             local ch = p.Character
-            local body = ch and (ch:FindFirstChild("HumanoidRootPart") or ch:FindFirstChild("Torso") or ch:FindFirstChild("UpperTorso") or ch:FindFirstChild("Head"))
-            if body then
-                AimTarget = body
-                return
+            if ch then
+                local root = ch:FindFirstChild("HumanoidRootPart")
+                local body = ch:FindFirstChild("UpperTorso") or ch:FindFirstChild("Torso") or root or ch:FindFirstChild("Head")
+                if body then
+                    AimTarget = body
+                    if root then
+                        local okv, v = pcall(function() return root.Velocity end)
+                        if okv and typeof(v) == "Vector3" then
+                            AimVel = v
+                        end
+                    end
+                    return
+                end
             end
         end
     end
@@ -351,7 +361,7 @@ local function InstallMouseHook()
                     local t = AimTarget
                     if t and t.Parent then
                         if key == "Hit" then
-                            return t.CFrame
+                            return CFrame.new(t.Position + (AimVel * 0.1))
                         else
                             return t
                         end
@@ -393,17 +403,18 @@ local function InstallNamecallHook()
                 local t = AimTarget
                 if t and t.Parent then
                     local m = getnamecallmethod()
+                    local pos = t.Position + (AimVel * 0.1)
                     if m == "Raycast" then
                         local args = { ... }
                         if typeof(args[1]) == "Vector3" and typeof(args[2]) == "Vector3" then
-                            args[2] = AimDir(args[1], t.Position)
+                            args[2] = AimDir(args[1], pos)
                             return oldNamecall(self, unpack(args))
                         end
                     elseif m == "FindPartOnRay" or m == "FindPartOnRayWithIgnoreList" or m == "FindPartOnRayWithWhitelist" then
                         local args = { ... }
                         if typeof(args[1]) == "Ray" then
                             local o = args[1].Origin
-                            args[1] = Ray.new(o, AimDir(o, t.Position))
+                            args[1] = Ray.new(o, AimDir(o, pos))
                             return oldNamecall(self, unpack(args))
                         end
                     end
@@ -438,16 +449,17 @@ local function InstallRayHooks()
                     if Config.Combat.SilentAim then
                         local t = AimTarget
                         if t and t.Parent then
+                            local pos = t.Position + (AimVel * 0.1)
                             local args = { ... }
                             if name == "Raycast" then
                                 if typeof(args[1]) == "Vector3" and typeof(args[2]) == "Vector3" then
-                                    args[2] = AimDir(args[1], t.Position)
+                                    args[2] = AimDir(args[1], pos)
                                     return oldFns[name](unpack(args))
                                 end
                             else
                                 if typeof(args[1]) == "Ray" then
                                     local o = args[1].Origin
-                                    args[1] = Ray.new(o, AimDir(o, t.Position))
+                                    args[1] = Ray.new(o, AimDir(o, pos))
                                     return oldFns[name](unpack(args))
                                 end
                             end
@@ -488,6 +500,40 @@ local function SetSilentAim(on)
         AimTarget = nil
         return true
     end
+end
+
+local function GetGun()
+    local char = GetCharacter()
+    if not char then return nil end
+    for _, t in ipairs(char:GetChildren()) do
+        if t:IsA("Tool") then
+            local n = t.Name:lower()
+            if n == "gun" or n == "revolver" then return t end
+        end
+    end
+    return nil
+end
+
+local function RapidTick()
+    if not Config.Combat.Rapid then return end
+    local gun = GetGun()
+    if not gun then return end
+    pcall(function() gun:Activate() end)
+    pcall(function()
+        for name, val in pairs(gun:GetAttributes()) do
+            local ln = name:lower()
+            if (ln:find("cool") or ln:find("delay") or ln:find("rate")) and type(val) == "number" then
+                gun:SetAttribute(name, 0)
+            end
+        end
+        for _, child in ipairs(gun:GetChildren()) do
+            local ln = child.Name:lower()
+            if ln:find("cool") or ln:find("debounce") or ln:find("delay") then
+                if child:IsA("BoolValue") then child.Value = false end
+                if child:IsA("NumberValue") or child:IsA("IntValue") then child.Value = 0 end
+            end
+        end
+    end)
 end
 
 local function KillAllTick()
@@ -566,34 +612,44 @@ local function CoinSweep()
     end
 end
 
+local weaponsCtrl = nil
+
 local function PickupWeapon(part)
     local root = GetRoot()
-    if not root then return end
+    if not root then return false end
     local origin = root.CFrame
     pcall(function() root.CFrame = part.CFrame end)
     Wait(0.2)
     pcall(function() root.CFrame = origin end)
+    return true
 end
 
 local function WeaponSweep()
     local root = GetRoot()
     local hum = GetHumanoid()
     if not root or not hum or hum.Health <= 0 then return end
+    local picked = false
     local gd = workspace:FindFirstChild("GunDrop", true)
     if gd and not IsInsidePlayer(gd) then
         local part = GetItemPart(gd) or gd
-        PickupWeapon(part)
-        return
-    end
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if not Config.Farm.Weapons then return end
-        local n = obj.Name:lower()
-        if MatchesNames(n, WEAPON_NAMES) and not IsInsidePlayer(obj) then
-            local part = GetItemPart(obj)
-            if part then
-                PickupWeapon(part)
-                return
+        picked = PickupWeapon(part)
+    else
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if not Config.Farm.Weapons then return end
+            local n = obj.Name:lower()
+            if MatchesNames(n, WEAPON_NAMES) and not IsInsidePlayer(obj) then
+                local part = GetItemPart(obj)
+                if part then
+                    picked = PickupWeapon(part)
+                    break
+                end
             end
+        end
+    end
+    if picked then
+        Config.Farm.Weapons = false
+        if weaponsCtrl then
+            pcall(function() weaponsCtrl.SetState(false) end)
         end
     end
 end
@@ -665,7 +721,8 @@ loop(0.25, "esp", UpdateESP)
 loop(0.2, "farm", FarmTick)
 loop(0.6, "weapons", function() if Config.Farm.Weapons then WeaponSweep() end end)
 loop(0.05, "killall", function() if Config.Combat.KillAll then KillAllTick() end end)
-loop(0.25, "aimcache", RefreshAim)
+loop(0.1, "aimcache", RefreshAim)
+loop(0.05, "rapid", RapidTick)
 
 local function Make(cls, props, parent)
     local inst = Instance.new(cls)
@@ -1109,6 +1166,7 @@ AddToggle(combatPage, "Silent Aim", false, function(v)
     end
 end)
 AddToggle(combatPage, "Kill All", false, function(v) Config.Combat.KillAll = v end)
+AddToggle(combatPage, "Rapid Fire", false, function(v) Config.Combat.Rapid = v end)
 
 AddToggle(espPage, "Enable ESP", false, function(v) Config.ESP.Enabled = v end)
 AddToggle(espPage, "Show Murderer", true, function(v) Config.ESP.Murderer = v end)
@@ -1117,7 +1175,7 @@ AddToggle(espPage, "Show Innocents", false, function(v) Config.ESP.Innocent = v 
 AddToggle(espPage, "Show Distance", true, function(v) Config.ESP.Distance = v end)
 
 AddToggle(farmPage, "Collect Coins", false, function(v) Config.Farm.Coins = v end)
-AddToggle(farmPage, "Collect Weapons", false, function(v) Config.Farm.Weapons = v end)
+weaponsCtrl = AddToggle(farmPage, "Collect Weapons", false, function(v) Config.Farm.Weapons = v end)
 
 AddToggle(movePage, "Fly", false, function(v)
     Config.Move.Fly = v
