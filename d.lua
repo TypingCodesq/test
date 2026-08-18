@@ -174,7 +174,8 @@ local sh=false
 if r=="Murderer" and cfg.es.M then sh=true end
 if r=="Sheriff" and cfg.es.S then sh=true end
 if r=="Innocent" and cfg.es.I then sh=true end
-local co=rc[r] or Color3.new(1,1,1)
+local co=rc[r]
+if not co then co=Color3.new(1,1,1) end
 if c.B then
 c.B.Adornee=hd
 c.B.Enabled=sh
@@ -272,7 +273,10 @@ if p~=lp and grl(p)=="Murderer" then
 local ch=p.Character
 if ch then
 local rt=ch:FindFirstChild("HumanoidRootPart")
-local bd=ch:FindFirstChild("UpperTorso") or ch:FindFirstChild("Torso") or rt or ch:FindFirstChild("Head")
+local bd=ch:FindFirstChild("UpperTorso")
+if not bd then bd=ch:FindFirstChild("Torso") end
+if not bd then bd=rt end
+if not bd then bd=ch:FindFirstChild("Head") end
 if bd then
 at=bd
 if rt then
@@ -502,7 +506,8 @@ if not r or not h or h.Health<=0 then return end
 local pk=false
 local gd=workspace:FindFirstChild("GunDrop",true)
 if gd and not iip(gd) then
-local p=gip(gd) or gd
+local p=gip(gd)
+if not p then p=gd end
 pk=pw(p)
 else
 for _,o in ipairs(workspace:GetDescendants()) do
@@ -552,8 +557,12 @@ if pa then i.Parent=pa end
 return i
 end
 local vp=cam.ViewportSize
-local W=math.max(300,math.min(520,vp.X*0.52))
-local H=math.max(230,math.min(400,vp.Y*0.62))
+local W=vp.X*0.52
+if W<300 then W=300 end
+if W>520 then W=520 end
+local H=vp.Y*0.62
+if H<230 then H=230 end
+if H>400 then H=400 end
 local ui=mk("ScreenGui",{Name="XScript",ResetOnSpawn=false,ZIndexBehavior=Enum.ZIndexBehavior.Sibling},cg)
 local mn=mk("Frame",{
 Size=UDim2.fromOffset(W,H),
@@ -761,9 +770,12 @@ local function at2(pg,t,d,cb)
 local r=mk("Frame",{Size=UDim2.new(1,-4,0,36),BackgroundColor3=th.Pn,BorderSizePixel=0},pg)
 mk("UICorner",{CornerRadius=UDim.new(0,7)},r)
 local l=mk("TextLabel",{Size=UDim2.new(1,-60,1,0),Position=UDim2.new(0,10,0,0),BackgroundTransparency=1,Text=t,TextColor3=th.Tx,Font=Enum.Font.Gotham,TextSize=13,TextXAlignment=Enum.TextXAlignment.Left},r)
-local tr=mk("Frame",{Size=UDim2.new(0,42,0,22),Position=UDim2.new(1,-50,0.5,-11),BackgroundColor3=d and th.Ac or th.Pl,BorderSizePixel=0},r)
+local tc=th.Pl
+if d then tc=th.Ac end
+local tr=mk("Frame",{Size=UDim2.new(0,42,0,22),Position=UDim2.new(1,-50,0.5,-11),BackgroundColor3=tc,BorderSizePixel=0},r)
 mk("UICorner",{CornerRadius=UDim.new(1,0)},tr)
-local kn=mk("Frame",{Size=UDim2.new(0,16,0,16),Position=d and UDim2.new(1,-19,0.5,-8) or UDim2.new(0,3,0.5,-8),BackgroundColor3=th.Kn,BorderSizePixel=0},tr)
+local kn=mk("Frame",{Size=UDim2.new(0,16,0,16),Position=UDim2.new(0,3,0.5,-8),BackgroundColor3=th.Kn,BorderSizePixel=0},tr)
+if d then kn.Position=UDim2.new(1,-19,0.5,-8) end
 mk("UICorner",{CornerRadius=UDim.new(1,0)},kn)
 local st=d
 local h=mk("TextButton",{Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,Text=""},r)
@@ -772,8 +784,14 @@ function ct.SetText(t) l.Text=t end
 function ct.SetState(s)
 if st==s then return end
 st=s
-tr.BackgroundColor3=st and th.Ac or th.Pl
-kn.Position=st and UDim2.new(1,-19,0.5,-8) or UDim2.new(0,3,0.5,-8)
+local sc=th.Pl
+if st then sc=th.Ac end
+tr.BackgroundColor3=sc
+if st then
+kn.Position=UDim2.new(1,-19,0.5,-8)
+else
+kn.Position=UDim2.new(0,3,0.5,-8)
+end
 if cb then cb(st) end
 end
 h.MouseButton1Click:Connect(function() ct.SetState(not st) end)
@@ -786,7 +804,10 @@ mk("TextLabel",{Size=UDim2.new(0.55,0,0,18),Position=UDim2.new(0,10,0,4),Backgro
 local vl=mk("TextLabel",{Size=UDim2.new(0.45,-10,0,18),Position=UDim2.new(0.55,0,0,4),BackgroundTransparency=1,Text=tostring(d),TextColor3=th.Kn,Font=Enum.Font.GothamBold,TextSize=12,TextXAlignment=Enum.TextXAlignment.Right},r)
 local br=mk("Frame",{Position=UDim2.new(0,10,0,27),Size=UDim2.new(1,-20,0,8),BackgroundColor3=th.Pl,BorderSizePixel=0},r)
 mk("UICorner",{CornerRadius=UDim.new(1,0)},br)
-local fl=mk("Frame",{Size=UDim2.new((d-mi)/(mx-mi),0,1,0),BackgroundColor3=th.Ac,BorderSizePixel=0},br)
+local rng=mx-mi
+local rat=0
+if rng>0 then rat=(d-mi)/rng end
+local fl=mk("Frame",{Size=UDim2.new(rat,0,1,0),BackgroundColor3=th.Ac,BorderSizePixel=0},br)
 mk("UICorner",{CornerRadius=UDim.new(1,0)},fl)
 local dg=false
 local function sfx(x)
