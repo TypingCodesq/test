@@ -313,24 +313,6 @@ return base+(av*tt)
 end
 return base+(av*0.08)
 end
-local function nearSelf(o)
-local r=gr()
-if not r then return false end
-return (o-r.Position).Magnitude<25
-end
-local function wallParams()
-local t=at
-if not t or not t.Parent then return nil end
-local char=t.Parent
-local ok,rp=pcall(function()
-local p=RaycastParams.new()
-p.FilterType=Enum.RaycastFilterType.Whitelist
-p.FilterDescendantsInstances={char}
-return p
-end)
-if ok then return rp end
-return nil
-end
 local function ad(o,t)
 local d=t-o
 if d.Magnitude<0.01 then return d end
@@ -379,24 +361,22 @@ if type(hookmetamethod)~="function" or type(getnamecallmethod)~="function" then 
 local ok=pcall(function()
 on=hookmetamethod(game,"__namecall",function(s,...)
 if cfg.cb.sa and s==workspace then
-local p=aimPos()
-if p then
+local t=at
+if t and t.Parent then
 local m=getnamecallmethod()
+local p=aimPos() or (t.Position+(av*0.1))
 if m=="Raycast" then
 local a={...}
 if typeof(a[1])=="Vector3" and typeof(a[2])=="Vector3" then
-if nearSelf(a[1]) then
 a[2]=ad(a[1],p)
-local wp=wallParams()
-if wp then a[3]=wp end
-end
 return on(s,unpack(a))
 end
 elseif m=="FindPartOnRay" or m=="FindPartOnRayWithIgnoreList" or m=="FindPartOnRayWithWhitelist" then
 local a={...}
 if typeof(a[1])=="Ray" then
-if nearSelf(a[1].Origin) then a[1]=Ray.new(a[1].Origin,ad(a[1].Origin,p)) end
+a[1]=Ray.new(a[1].Origin,ad(a[1].Origin,p))
 return on(s,unpack(a))
+end
 end
 end
 end
@@ -423,22 +403,20 @@ local f=workspace[n]
 if type(f)=="function" then
 of[n]=hookfunction(f,function(...)
 if cfg.cb.sa then
-local p=aimPos()
-if p then
+local t=at
+if t and t.Parent then
+local p=aimPos() or (t.Position+(av*0.1))
 local a={...}
 if n=="Raycast" then
 if typeof(a[1])=="Vector3" and typeof(a[2])=="Vector3" then
-if nearSelf(a[1]) then
 a[2]=ad(a[1],p)
-local wp=wallParams()
-if wp then a[3]=wp end
-end
 return of[n](unpack(a))
 end
 else
 if typeof(a[1])=="Ray" then
-if nearSelf(a[1].Origin) then a[1]=Ray.new(a[1].Origin,ad(a[1].Origin,p)) end
+a[1]=Ray.new(a[1].Origin,ad(a[1].Origin,p))
 return of[n](unpack(a))
+end
 end
 end
 end
