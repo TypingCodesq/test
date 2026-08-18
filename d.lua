@@ -1,4 +1,5 @@
 if not game:IsLoaded() then game.Loaded:Wait() end
+local function OR(a,b) if a then return a else return b end end
 local ps=game:GetService("Players")
 local rs=game:GetService("RunService")
 local uis=game:GetService("UserInputService")
