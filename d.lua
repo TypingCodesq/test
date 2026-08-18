@@ -92,7 +92,6 @@ end
 end
 return nil
 end
-local ld=0
 local function sm()
 if not alive then return end
 local r=gr()
@@ -102,7 +101,6 @@ if not h then return end
 if r.Position.Y<-200 then sf(function() r.CFrame=CFrame.new(0,50,0) end) end
 if not cfg.cb.ad then return end
 if not ra() then return end
-if tick()-ld<0.5 then return end
 local k=gk()
 if not k then return end
 local kr=nil
@@ -117,7 +115,6 @@ if t:IsA("Tool") then
 if t.Name:lower():find("knife") then
 sf(function()
 r.CFrame=CFrame.new(r.Position+Vector3.new(math.random(-25,25),8,math.random(-25,25)))
-ld=tick()
 end)
 return
 end
@@ -137,7 +134,6 @@ local h2=gh()
 if h2 then
 local pp=Vector3.new(-tp.Z,0,tp.X)
 h2:MoveTo(r.Position+pp*12)
-ld=tick()
 end
 end)
 end
@@ -424,22 +420,38 @@ local function irh()
 if type(hookfunction)~="function" then return false end
 local ok=pcall(function()
 if type(workspace.Raycast)=="function" then
-local orig=hookfunction(workspace.Raycast,function(o,d,...)
+local o1=hookfunction(workspace.Raycast,function(o,d,...)
 if cfg.cb.sa then d=redir(o,d) end
-return orig(o,d,...)
+return o1(o,d,...)
 end)
 table.insert(hookedList,"Raycast")
 end
 if type(workspace.FindPartOnRay)=="function" then
-local orig2=hookfunction(workspace.FindPartOnRay,function(ray,...)
+local o2=hookfunction(workspace.FindPartOnRay,function(ray,...)
 if cfg.cb.sa then
-if type(ray)=="userdata" then
-ray=Ray.new(ray.Origin,redir(ray.Origin,ray.Direction))
+if type(ray)=="userdata" then ray=Ray.new(ray.Origin,redir(ray.Origin,ray.Direction)) end
 end
-end
-return orig2(ray,...)
+return o2(ray,...)
 end)
 table.insert(hookedList,"FindPartOnRay")
+end
+if type(workspace.FindPartOnRayWithIgnoreList)=="function" then
+local o3=hookfunction(workspace.FindPartOnRayWithIgnoreList,function(ray,...)
+if cfg.cb.sa then
+if type(ray)=="userdata" then ray=Ray.new(ray.Origin,redir(ray.Origin,ray.Direction)) end
+end
+return o3(ray,...)
+end)
+table.insert(hookedList,"FindPartOnRayWithIgnoreList")
+end
+if type(workspace.FindPartOnRayWithWhitelist)=="function" then
+local o4=hookfunction(workspace.FindPartOnRayWithWhitelist,function(ray,...)
+if cfg.cb.sa then
+if type(ray)=="userdata" then ray=Ray.new(ray.Origin,redir(ray.Origin,ray.Direction)) end
+end
+return o4(ray,...)
+end)
+table.insert(hookedList,"FindPartOnRayWithWhitelist")
 end
 end)
 return ok
@@ -524,17 +536,16 @@ local function doFling(tr)
 local r=gr()
 if not r then return end
 local oc=r.CFrame
-pcall(function() r.CFrame=tr.CFrame end)
-r.CanCollide=true
 local m=0.1
 local t0=tick()
 pcall(function()
-while tick()-t0<0.3 do
+while tick()-t0<0.5 do
 rs.Heartbeat:Wait()
+if not tr.Parent then break end
+r.CFrame=tr.CFrame
+r.CanCollide=true
 local v=r.Velocity
 r.Velocity=v*10000+Vector3.new(0,10000,0)
-rs.RenderStepped:Wait()
-r.Velocity=v
 rs.Stepped:Wait()
 r.Velocity=v+Vector3.new(0,m,0)
 m=-m
@@ -635,7 +646,7 @@ return
 end
 r.CanCollide=false
 coinNoclip=true
-if tick()-coinTimer>0.3 then
+if tick()-coinTimer>0.1 then
 coinTimer=tick()
 coinTarget=nil
 local bd=math.huge
@@ -655,8 +666,8 @@ end
 if coinTarget then
 local tp=Vector3.new(coinTarget.Position.X, coinTarget.Position.Y-2, coinTarget.Position.Z)
 local d=tp-r.Position
-if d.Magnitude>1 then
-r.CFrame=r.CFrame+d.Unit*math.min(d.Magnitude,2.5)
+if d.Magnitude>0.5 then
+r.CFrame=r.CFrame+d.Unit*math.min(d.Magnitude,3)
 end
 end
 end
@@ -1045,23 +1056,6 @@ at2(mp,"Speed",false,function(v) cfg.mv.spd=v end)
 as(mp,"Speed Value",16,120,60,function(v) cfg.mv.sv=v end)
 as(mp,"Fly Speed",20,200,60,function(v) cfg.mv.fs=v end)
 at2(mp,"Infinite Jump",false,function(v) cfg.mv.ij=v end)
-local ub=mk("TextButton",{
-Size=UDim2.new(1,-4,0,36),
-BackgroundColor3=th.Ad,
-Text="Unbug",
-TextColor3=th.Kn,
-Font=Enum.Font.GothamBold,
-TextSize=13,
-BorderSizePixel=0
-},mp)
-mk("UICorner",{CornerRadius=UDim.new(0,7)},ub)
-ub.MouseButton1Click:Connect(function()
-local r=gr()
-if r then
-r.Velocity=Vector3.new(0,0,0)
-pcall(function() r.CFrame=CFrame.new(0,50,0) end)
-end
-end)
 local flist=mk("ScrollingFrame",{
 Size=UDim2.new(1,-4,1,-40),
 Position=UDim2.new(0,2,0,38),
