@@ -1132,4 +1132,7 @@ end
 ab(ip,"Discord Server",function()
 pcall(function()
 if setclipboard then setclipboard("https://discord.gg/rTdZxp9Djf") end
-sgui:SetCore("SendNotification",{Title="X-SCRIPT",Text="Link cop
+sgui:SetCore("SendNotification",{Title="X-SCRIPT",Text="Link copiado",Duration=3})
+end)
+end)
+mk("TextLabel",{Size=UDim2.new(1,-4,0,20),BackgroundTransparency=1,Text="Credits: X Hub Team",TextColor3=th.Tx,Font=Enum.Font.Gotham,TextSize=12,TextXAlignment=Enum.TextXAlignment.Left},ip)
