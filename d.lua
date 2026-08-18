@@ -393,7 +393,7 @@ sai=true
 end)
 return ok
 end
-local function rsa()
+local function rsaM()
 if not sai then return end
 pcall(function()
 if type(getrawmetatable)=="function" then
@@ -406,6 +406,51 @@ end
 end
 end)
 sai=false
+end
+local hookedList={}
+local function redir(o,d)
+local r=gr()
+if not r then return d end
+if (o-r.Position).Magnitude>15 then return d end
+local t=at
+if not t then return d end
+if not t.Parent then return d end
+local pos=t.Position+(av*0.1)
+local dd=pos-o
+if dd.Magnitude<0.01 then return d end
+return dd.Unit*math.min(dd.Magnitude+1,999)
+end
+local function irh()
+if type(hookfunction)~="function" then return false end
+local ok=pcall(function()
+if type(workspace.Raycast)=="function" then
+local orig=hookfunction(workspace.Raycast,function(o,d,...)
+if cfg.cb.sa then d=redir(o,d) end
+return orig(o,d,...)
+end)
+table.insert(hookedList,"Raycast")
+end
+if type(workspace.FindPartOnRay)=="function" then
+local orig2=hookfunction(workspace.FindPartOnRay,function(ray,...)
+if cfg.cb.sa then
+if type(ray)=="userdata" then
+ray=Ray.new(ray.Origin,redir(ray.Origin,ray.Direction))
+end
+end
+return orig2(ray,...)
+end)
+table.insert(hookedList,"FindPartOnRay")
+end
+end)
+return ok
+end
+local function rrh()
+pcall(function()
+if type(restorefunction)=="function" then
+for _,n in ipairs(hookedList) do restorefunction(workspace[n]) end
+end
+end)
+hookedList={}
 end
 local kc=nil
 local ik=false
@@ -458,41 +503,45 @@ end)
 end
 local function ssa(o)
 if o then
-local ok=isa()
+local a=isa()
+local b=irh()
 sk()
-if not ok then
+if not a and not b then
 pcall(function()
 sgui:SetCore("SendNotification",{Title="X-SCRIPT",Text="Silent Aim no soportado",Duration=4})
 end)
 end
-return ok
+return a or b
 else
-rsa()
+rsaM()
+rrh()
 ck()
 at=nil
 return true
 end
 end
 local function doFling(tr)
-local p=Instance.new("Part")
-p.Size=Vector3.new(1.5,1.5,1.5)
-p.Transparency=1
-p.CanCollide=true
-p.Anchored=false
-p.TopSurface=Enum.SurfaceType.Smooth
-p.BottomSurface=Enum.SurfaceType.Smooth
-p.Parent=workspace
+local r=gr()
+if not r then return end
+local oc=r.CFrame
+pcall(function() r.CFrame=tr.CFrame end)
+r.CanCollide=true
+local m=0.1
 local t0=tick()
 pcall(function()
-while tick()-t0<0.4 do
+while tick()-t0<0.3 do
 rs.Heartbeat:Wait()
-if not tr.Parent then break end
-local a=(tick()-t0)*50
-p.CFrame=CFrame.new(tr.Position+Vector3.new(math.sin(a)*1.5,0.5,math.cos(a)*1.5))*CFrame.Angles(a,a*1.3,a*0.7)
-p.Velocity=Vector3.new(math.random(-400,400),math.random(300,700),math.random(-400,400))
+local v=r.Velocity
+r.Velocity=v*10000+Vector3.new(0,10000,0)
+rs.RenderStepped:Wait()
+r.Velocity=v
+rs.Stepped:Wait()
+r.Velocity=v+Vector3.new(0,m,0)
+m=-m
 end
 end)
-pcall(function() p:Destroy() end)
+pcall(function() r.Velocity=Vector3.new(0,0,0) end)
+pcall(function() r.CFrame=oc end)
 end
 local function ft()
 if not cfg.cb.fk then return end
@@ -568,29 +617,47 @@ if o:IsA("Model") then return fbc(o,"BasePart") end
 if o:IsA("Tool") then return o:FindFirstChild("Handle") end
 return nil
 end
-local function cs()
+local coinTarget=nil
+local coinTimer=0
+local coinNoclip=false
+local function cm()
+if not alive then return end
 local r=gr()
 local h=gh()
-if not r then return end
-if not h then return end
-if h.Health<=0 then return end
-local best=nil
+if not r or not h then return end
+if not cfg.fm.cn then
+if coinNoclip then
+r.CanCollide=true
+coinNoclip=false
+end
+coinTarget=nil
+return
+end
+r.CanCollide=false
+coinNoclip=true
+if tick()-coinTimer>0.3 then
+coinTimer=tick()
+coinTarget=nil
 local bd=math.huge
 for _,o in ipairs(workspace:GetDescendants()) do
-if not cfg.fm.cn then return end
 local n=o.Name:lower()
 if mn(n,fn) then
 if not iip(o) then
 local p=gip(o)
 if p then
 local d=(p.Position-r.Position).Magnitude
-if d<bd then bd=d best=p end
+if d<bd then bd=d coinTarget=p end
 end
 end
 end
 end
-if best then
-h:MoveTo(best.Position)
+end
+if coinTarget then
+local tp=Vector3.new(coinTarget.Position.X, coinTarget.Position.Y-2, coinTarget.Position.Z)
+local d=tp-r.Position
+if d.Magnitude>1 then
+r.CFrame=r.CFrame+d.Unit*math.min(d.Magnitude,2.5)
+end
 end
 end
 local wc=nil
@@ -635,11 +702,11 @@ if wc then pcall(function() wc.SetState(false) end) end
 end
 end
 local function ft2()
-if cfg.fm.cn then pcall(cs) end
+if cfg.fm.wp then pcall(ws) end
 end
 rs.RenderStepped:Connect(function()
 if not alive then return end
-pcall(function() hf() hs() sm() end)
+pcall(function() hf() hs() sm() cm() end)
 end)
 rs.Stepped:Connect(function()
 if not alive then return end
@@ -655,8 +722,7 @@ end)
 coroutine.resume(co)
 end
 lp(0.25,"esp",ue)
-lp(0.15,"farm",ft2)
-lp(0.6,"wp",function() if cfg.fm.wp then ws() end end)
+lp(0.6,"wp",ft2)
 lp(0.05,"ka",function() if cfg.cb.ka then kt() end end)
 lp(0.3,"fk",ft)
 lp(0.1,"ac",ra2)
@@ -1066,7 +1132,4 @@ end
 ab(ip,"Discord Server",function()
 pcall(function()
 if setclipboard then setclipboard("https://discord.gg/rTdZxp9Djf") end
-sgui:SetCore("SendNotification",{Title="X-SCRIPT",Text="Link copiado",Duration=3})
-end)
-end)
-mk("TextLabel",{Size=UDim2.new(1,-4,0,20),BackgroundTransparency=1,Text="Credits: X Hub Team",TextColor3=th.Tx,Font=Enum.Font.Gotham,TextSize=12,TextXAlignment=Enum.TextXAlignment.Left},ip)
+sgui:SetCore("SendNotification",{Title="X-SCRIPT",Text="Link cop
