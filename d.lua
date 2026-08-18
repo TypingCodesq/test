@@ -8,7 +8,7 @@ local lp=ps.LocalPlayer
 local cam=workspace.CurrentCamera
 local logo=134441968486950
 local alive=true
-local function safe(f) pcall(f) end
+local function sf(f) pcall(f) end
 pcall(function()
 for _,n in ipairs({"XScript","XScript_ESP","XScript_FlyPad","XScript_Icon"}) do
 local o=cg:FindFirstChild(n)
@@ -57,59 +57,59 @@ end
 end
 return "Innocent"
 end
-local function roundActive()
+local function ra()
 for _,p in ipairs(ps:GetPlayers()) do
 if p~=lp and grl(p)=="Murderer" then return true end
 end
 return false
 end
-local function getKiller()
+local function gk()
 for _,p in ipairs(ps:GetPlayers()) do
 if p~=lp and grl(p)=="Murderer" then return p end
 end
 return nil
 end
-local lastDodge=0
-local function safeMode()
+local ld=0
+local function sm()
 if not alive then return end
 local r=gr()
 local h=gh()
 if not r or not h then return end
-if r.Position.Y<-200 then safe(function() r.CFrame=CFrame.new(0,50,0) end) end
+if r.Position.Y<-200 then sf(function() r.CFrame=CFrame.new(0,50,0) end) end
 if not cfg.cb.ad then return end
-if not roundActive() then return end
-if tick()-lastDodge<0.3 then return end
-local killer=getKiller()
-if not killer then return end
-local kr=killer.Character and killer.Character:FindFirstChild("HumanoidRootPart")
+if not ra() then return end
+if tick()-ld<0.3 then return end
+local k=gk()
+if not k then return end
+local kr=k.Character and k.Character:FindFirstChild("HumanoidRootPart")
 if not kr then return end
-local dist=(kr.Position-r.Position).Magnitude
-if dist<8 then
-local kc=killer.Character
+local d=(kr.Position-r.Position).Magnitude
+if d<8 then
+local kc=k.Character
 if kc then
 for _,t in ipairs(kc:GetChildren()) do
 if t:IsA("Tool") and t.Name:lower():find("knife") then
-safe(function()
+sf(function()
 r.CFrame=CFrame.new(r.Position+Vector3.new(math.random(-30,30),10,math.random(-30,30)))
-lastDodge=tick()
+ld=tick()
 end)
 return
 end
 end
 end
 end
-if dist<100 then
-local kh=killer.Character and killer.Character:FindFirstChild("Head")
+if d<100 then
+local kh=k.Character and k.Character:FindFirstChild("Head")
 if kh then
-local toP=(r.Position-kh.Position).Unit
-local dot=toP:Dot(kh.CFrame.LookVector)
+local tp=(r.Position-kh.Position).Unit
+local dot=tp:Dot(kh.CFrame.LookVector)
 if dot>0.8 then
-safe(function()
+sf(function()
 local h2=gh()
 if h2 then
-local perp=Vector3.new(-toP.Z,0,toP.X)
-h2:MoveTo(r.Position+perp*15)
-lastDodge=tick()
+local pp=Vector3.new(-tp.Z,0,tp.X)
+h2:MoveTo(r.Position+pp*15)
+ld=tick()
 end
 end)
 end
@@ -128,7 +128,7 @@ Innocent=Color3.fromRGB(120,255,120)
 }
 local function ce(p)
 local c={B=nil,L=nil}
-safe(function()
+sf(function()
 local b=Instance.new("BillboardGui")
 b.Size=UDim2.new(0,130,0,40)
 b.ExtentsOffset=Vector3.new(0,3.2,0)
@@ -152,7 +152,7 @@ end
 local function re(p)
 local c=ec[p]
 if c then
-safe(function() c.B:Destroy() end)
+sf(function() c.B:Destroy() end)
 ec[p]=nil
 end
 end
@@ -209,10 +209,8 @@ if fk("R",Enum.KeyCode.D) then d=d+cf.RightVector end
 if fk("U",Enum.KeyCode.Space) then d=d+Vector3.new(0,1,0) end
 if fk("D",Enum.KeyCode.LeftControl) then d=d-Vector3.new(0,1,0) end
 if d.Magnitude>0 then
-safe(function() r.CFrame=r.CFrame+d.Unit*(cfg.mv.fs*0.03) end)
+sf(function() r.CFrame=r.CFrame+d.Unit*(cfg.mv.fs*0.03) end)
 end
-else
--- nothing
 end
 end
 local ns={}
@@ -230,7 +228,7 @@ end
 else
 if next(ns) then
 for p,v in pairs(ns) do
-safe(function() if p.Parent then p.CanCollide=v end end)
+sf(function() if p.Parent then p.CanCollide=v end end)
 end
 ns={}
 end
@@ -251,12 +249,12 @@ end
 uis.JumpRequest:Connect(function()
 if cfg.mv.ij then
 local h=gh()
-if h then safe(function() h:ChangeState(Enum.HumanoidStateType.Jumping) end) end
+if h then sf(function() h:ChangeState(Enum.HumanoidStateType.Jumping) end) end
 end
 end)
 local at=nil
 local av=Vector3.new(0,0,0)
-local function ra()
+local function ra2()
 if not cfg.cb.sa then at=nil return end
 local c=gc()
 local hg=false
@@ -288,9 +286,9 @@ end
 end
 at=nil
 end
-local saInstalled=false
-local function installSA()
-if saInstalled then return true end
+local sai=false
+local function isa()
+if sai then return true end
 local ok=pcall(function()
 if type(hookmetamethod)~="function" or type(getnamecallmethod)~="function" then error("no hook") end
 local old=hookmetamethod(game,"__namecall",function(s,...)
@@ -321,103 +319,109 @@ end
 end
 return old(s,...)
 end)
-saInstalled=true
+sai=true
 end)
 return ok
 end
-local function removeSA()
-if not saInstalled then return end
+local function rsa()
+if not sai then return end
 pcall(function()
 if type(restorefunction)=="function" then restorefunction(game,"__namecall") end
 end)
-saInstalled=false
+sai=false
 end
-local knifeConn=nil
-local inKnife=false
-local function clearKnife()
-if knifeConn then pcall(function() knifeConn:Disconnect() end) knifeConn=nil end
+local kc=nil
+local ik=false
+local function ck()
+if kc then pcall(function() kc:Disconnect() end) kc=nil end
 end
-local function setupKnife()
-clearKnife()
+local function sk()
+ck()
 local c=gc()
 if not c then return end
-local knife=nil
+local k=nil
 for _,t in ipairs(c:GetChildren()) do
-if t:IsA("Tool") and t.Name:lower():find("knife") then knife=t break end
+if t:IsA("Tool") and t.Name:lower():find("knife") then k=t break end
 end
-if not knife then return end
-knifeConn=knife.Activated:Connect(function()
+if not k then return end
+kc=k.Activated:Connect(function()
 if not cfg.cb.sa then return end
-if inKnife then return end
-inKnife=true
+if ik then return end
+ik=true
 local r=gr()
 if r then
-local targets={}
+local tg={}
 for _,p in ipairs(ps:GetPlayers()) do
 if p~=lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
 local h=fbc(p.Character,"Humanoid")
-if h and h.Health>0 then table.insert(targets,p) end
+if h and h.Health>0 then table.insert(tg,p) end
 end
 end
-if #targets>0 then
-local t=targets[math.random(1,#targets)]
+if #tg>0 then
+local t=tg[math.random(1,#tg)]
 local tr=t.Character:FindFirstChild("HumanoidRootPart")
-local origin=r.CFrame
-safe(function() r.CFrame=tr.CFrame*CFrame.new(0,0,2) end)
+local or=r.CFrame
+sf(function() r.CFrame=tr.CFrame*CFrame.new(0,0,2) end)
 wait(0.05)
-safe(function() knife:Activate() end)
+sf(function() k:Activate() end)
 wait(0.1)
-safe(function() r.CFrame=origin end)
+sf(function() r.CFrame=or end)
 end
 end
-inKnife=false
+ik=false
 end)
 end
 local function ssa(o)
 if o then
-local ok=installSA()
-setupKnife()
+local ok=isa()
+sk()
 if not ok then
 pcall(function()
-sgui:SetCore("SendNotification",{Title="X-SCRIPT",Text="Tu executor no soporta Silent Aim",Duration=4})
+sgui:SetCore("SendNotification",{Title="X-SCRIPT",Text="Silent Aim no soportado",Duration=4})
 end)
 end
 return ok
 else
-removeSA()
-clearKnife()
+rsa()
+ck()
 at=nil
 return true
 end
 end
-local function flingTarget(tr)
-local r=gr()
-if not r then return end
-local origin=r.CFrame
-safe(function() r.CFrame=tr.CFrame end)
-local bv=nil
-pcall(function()
-bv=Instance.new("BodyVelocity")
-bv.MaxForce=Vector3.new(1e6,1e6,1e6)
-bv.Velocity=Vector3.new(math.random(-50,50),80,math.random(-50,50))
-bv.Parent=r
-end)
-wait(0.2)
-pcall(function() if bv then bv:Destroy() end end)
-safe(function() r.CFrame=origin end)
+local hf2=false
+local function fl()
+local c,h,v,m=nil,nil,nil,0.1
+while hf2 do
+rs.Heartbeat:Wait()
+c=lp.Character
+h=c and c:FindFirstChild("HumanoidRootPart")
+if h then
+v=h.Velocity
+h.Velocity=v*10000+Vector3.new(0,10000,0)
+rs.RenderStepped:Wait()
+h.Velocity=v
+rs.Stepped:Wait()
+h.Velocity=v+Vector3.new(0,m,0)
+m=-m
 end
-local function fkTick()
+end
+end
+local function ft()
 if not cfg.cb.fk then return end
-if not roundActive() then return end
+if not ra() then return end
 local r=gr()
 if not r then return end
-local killer=getKiller()
-if not killer then return end
-local kr=killer.Character and killer.Character:FindFirstChild("HumanoidRootPart")
+local k=gk()
+if not k then return end
+local kr=k.Character and k.Character:FindFirstChild("HumanoidRootPart")
 if not kr then return end
-flingTarget(kr)
+hf2=true
+local co=coroutine.create(fl)
+coroutine.resume(co)
+wait(0.5)
+hf2=false
 end
-local function kaTick()
+local function kt()
 local r=gr()
 local c=gc()
 if not r or not c then return end
@@ -433,13 +437,13 @@ if p~=lp and p.Character then
 local tr=p.Character:FindFirstChild("HumanoidRootPart")
 local th=fbc(p.Character,"Humanoid")
 if tr and th and th.Health>0 then
-safe(function() r.CFrame=tr.CFrame*CFrame.new(0,0,2) end)
-safe(function() k:Activate() end)
+sf(function() r.CFrame=tr.CFrame*CFrame.new(0,0,2) end)
+sf(function() k:Activate() end)
 wait(0.01)
 end
 end
 end
-safe(function() r.CFrame=o end)
+sf(function() r.CFrame=o end)
 end
 local fn={"coin"}
 local wn={"gun","revolver","pistol"}
@@ -474,8 +478,8 @@ local n=o.Name:lower()
 if mn(n,fn) and not iip(o) then
 local p=gip(o)
 if p then
-safe(function() r.CFrame=CFrame.new(p.Position+Vector3.new(0,1,0)) end)
-safe(function() h:MoveTo(p.Position) end)
+sf(function() r.CFrame=CFrame.new(p.Position+Vector3.new(0,1,0)) end)
+sf(function() h:MoveTo(p.Position) end)
 wait(0.05)
 end
 end
@@ -486,9 +490,9 @@ local function pw(p)
 local r=gr()
 if not r then return false end
 local o=r.CFrame
-safe(function() r.CFrame=p.CFrame end)
+sf(function() r.CFrame=p.CFrame end)
 wait(0.2)
-safe(function() r.CFrame=o end)
+sf(function() r.CFrame=o end)
 return true
 end
 local function ws()
@@ -515,18 +519,18 @@ cfg.fm.wp=false
 if wc then pcall(function() wc.SetState(false) end) end
 end
 end
-local function ft()
+local function ft2()
 if cfg.fm.cn then pcall(cs) end
 end
 rs.RenderStepped:Connect(function()
 if not alive then return end
-pcall(function() hf() hs() safeMode() end)
+pcall(function() hf() hs() sm() end)
 end)
 rs.Stepped:Connect(function()
 if not alive then return end
 pcall(hn)
 end)
-local function lpp(iv,k,f)
+local function lp(iv,k,f)
 local co=coroutine.create(function()
 while alive do
 wait(iv)
@@ -535,12 +539,12 @@ end
 end)
 coroutine.resume(co)
 end
-lpp(0.25,"esp",ue)
-lpp(0.1,"farm",ft)
-lpp(0.6,"weapons",function() if cfg.fm.wp then ws() end end)
-lpp(0.05,"killall",function() if cfg.cb.ka then kaTick() end end)
-lpp(0.3,"fling",fkTick)
-lpp(0.1,"aimcache",ra)
+lp(0.25,"esp",ue)
+lp(0.1,"farm",ft2)
+lp(0.6,"wp",function() if cfg.fm.wp then ws() end end)
+lp(0.05,"ka",function() if cfg.cb.ka then kt() end end)
+lp(0.3,"fk",ft)
+lp(0.1,"ac",ra2)
 local function mk(cl,pr,pa)
 local i=Instance.new(cl)
 for k,v in pairs(pr) do i[k]=v end
@@ -644,12 +648,12 @@ TextSize=14,
 ZIndex=11
 },cf)
 mk("UICorner",{CornerRadius=UDim.new(0,7)},nb)
-local iconGui=nil
-local iconBtn=nil
-local function showIcon()
-if iconGui then iconGui.Enabled=true return end
-iconGui=mk("ScreenGui",{Name="XScript_Icon",ResetOnSpawn=false},cg)
-iconBtn=mk("TextButton",{
+local ig=nil
+local ib2=nil
+local function si()
+if ig then ig.Enabled=true return end
+ig=mk("ScreenGui",{Name="XScript_Icon",ResetOnSpawn=false},cg)
+ib2=mk("TextButton",{
 Size=UDim2.fromOffset(50,50),
 Position=UDim2.new(0,10,0.5,-25),
 BackgroundColor3=th.Pl,
@@ -658,24 +662,24 @@ BorderSizePixel=0,
 AutoButtonColor=false,
 Active=true,
 Draggable=true
-},iconGui)
-mk("UICorner",{CornerRadius=UDim.new(0,10)},iconBtn)
+},ig)
+mk("UICorner",{CornerRadius=UDim.new(0,10)},ib2)
 pcall(function()
 local i=Instance.new("ImageLabel")
 i.Size=UDim2.new(1,0,1,0)
 i.BackgroundTransparency=1
 i.Image="rbxassetid://"..tostring(logo)
 i.ScaleType=Enum.ScaleType.Stretch
-i.Parent=iconBtn
+i.Parent=ib2
 end)
-iconBtn.MouseButton1Click:Connect(function()
+ib2.MouseButton1Click:Connect(function()
 mn.Visible=true
-iconGui.Enabled=false
+ig.Enabled=false
 end)
 end
 mb.MouseButton1Click:Connect(function()
 mn.Visible=false
-showIcon()
+si()
 end)
 cb.MouseButton1Click:Connect(function()
 cf.Visible=true
@@ -686,7 +690,7 @@ end)
 yb.MouseButton1Click:Connect(function()
 alive=false
 pcall(function() ui:Destroy() end)
-pcall(function() if iconGui then iconGui:Destroy() end end)
+pcall(function() if ig then ig:Destroy() end end)
 pcall(function() es:Destroy() end)
 pcall(function() fp:Destroy() end)
 end)
@@ -843,7 +847,7 @@ ScrollBarImageColor3=th.Ac,
 BorderSizePixel=0
 },flp)
 mk("UIListLayout",{Padding=UDim.new(0,5)},flist)
-local function buildFlingList()
+local function bfl()
 for _,ch in ipairs(flist:GetChildren()) do
 if ch:IsA("TextButton") then ch:Destroy() end
 end
@@ -877,12 +881,18 @@ TextXAlignment=Enum.TextXAlignment.Left
 },row)
 row.MouseButton1Click:Connect(function()
 local tr=p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-if tr then flingTarget(tr) end
+if tr then
+hf2=true
+local co=coroutine.create(fl)
+coroutine.resume(co)
+wait(0.5)
+hf2=false
+end
 end)
 end
 end
 end
-local rbtn=mk("TextButton",{
+local rb=mk("TextButton",{
 Size=UDim2.new(1,-4,0,32),
 BackgroundColor3=th.Ac,
 Text="Refresh List",
@@ -891,20 +901,19 @@ Font=Enum.Font.GothamBold,
 TextSize=13,
 BorderSizePixel=0
 },flp)
-mk("UICorner",{CornerRadius=UDim.new(0,7)},rbtn)
-rbtn.MouseButton1Click:Connect(buildFlingList)
-buildFlingList()
-local function addButton(pg,text,callback)
-local btn=mk("TextButton",{Size=UDim2.new(1,-4,0,36),BackgroundColor3=th.Ac,Text=text,TextColor3=th.Kn,Font=Enum.Font.GothamBold,TextSize=13,BorderSizePixel=0},pg)
-mk("UICorner",{CornerRadius=UDim.new(0,7)},btn)
-btn.MouseButton1Click:Connect(callback)
-return btn
+mk("UICorner",{CornerRadius=UDim.new(0,7)},rb)
+rb.MouseButton1Click:Connect(bfl)
+bfl()
+local function ab(pg,t,cb)
+local b=mk("TextButton",{Size=UDim2.new(1,-4,0,36),BackgroundColor3=th.Ac,Text=t,TextColor3=th.Kn,Font=Enum.Font.GothamBold,TextSize=13,BorderSizePixel=0},pg)
+mk("UICorner",{CornerRadius=UDim.new(0,7)},b)
+b.MouseButton1Click:Connect(cb)
+return b
 end
-addButton(ip,"Discord Server",function()
+ab(ip,"Discord Server",function()
 pcall(function()
 if setclipboard then setclipboard("https://discord.gg/rTdZxp9Djf") end
 sgui:SetCore("SendNotification",{Title="X-SCRIPT",Text="Link copiado",Duration=3})
 end)
 end)
 mk("TextLabel",{Size=UDim2.new(1,-4,0,20),BackgroundTransparency=1,Text="Credits: X Hub Team",TextColor3=th.Tx,Font=Enum.Font.Gotham,TextSize=12,TextXAlignment=Enum.TextXAlignment.Left},ip)
-print("X-SCRIPT cargado OK")
