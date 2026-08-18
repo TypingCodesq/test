@@ -6,6 +6,7 @@ local cg=game:GetService("CoreGui")
 local sgui=game:GetService("StarterGui")
 local lp=ps.LocalPlayer
 local cam=workspace.CurrentCamera
+local ms=lp:GetMouse()
 local logo=134441968486950
 local alive=true
 local function sf(f) pcall(f) end
@@ -329,68 +330,49 @@ end
 at=nil
 end
 local sai=false
-local function isa()
-if sai then return true end
-local ok=pcall(function()
-if type(hookmetamethod)~="function" then error("no hook") end
-if type(getnamecallmethod)~="function" then error("no hook") end
-local old=hookmetamethod(game,"__namecall",function(s,...)
-if cfg.cb.sa then
-if s==workspace then
+local oldidx=nil
+local function aimHook(s,k)
+if s==ms then
+if k=="Hit" then
 local t=at
 if t then
 if t.Parent then
-local m=getnamecallmethod()
-local pos=t.Position+(av*0.1)
-if m=="Raycast" then
-local a={...}
-if type(a[1])=="userdata" then
-if type(a[2])=="userdata" then
-local d=pos-a[1]
-if d.Magnitude>0.01 then a[2]=d.Unit*math.min(d.Magnitude+1,999) end
-return old(s,unpack(a))
+return CFrame.new(t.Position+(av*0.1))
 end
 end
 end
-if m=="FindPartOnRay" then
-local a={...}
-if type(a[1])=="userdata" then
-local o=a[1].Origin
-local d=pos-o
-local nd=d
-if d.Magnitude>0.01 then nd=d.Unit*math.min(d.Magnitude+1,999) end
-a[1]=Ray.new(o,nd)
-return old(s,unpack(a))
-end
-end
-if m=="FindPartOnRayWithIgnoreList" then
-local a={...}
-if type(a[1])=="userdata" then
-local o=a[1].Origin
-local d=pos-o
-local nd=d
-if d.Magnitude>0.01 then nd=d.Unit*math.min(d.Magnitude+1,999) end
-a[1]=Ray.new(o,nd)
-return old(s,unpack(a))
-end
-end
-if m=="FindPartOnRayWithWhitelist" then
-local a={...}
-if type(a[1])=="userdata" then
-local o=a[1].Origin
-local d=pos-o
-local nd=d
-if d.Magnitude>0.01 then nd=d.Unit*math.min(d.Magnitude+1,999) end
-a[1]=Ray.new(o,nd)
-return old(s,unpack(a))
+if k=="Target" then
+local t=at
+if t then
+if t.Parent then
+return t
 end
 end
 end
 end
+if type(oldidx)=="function" then
+return oldidx(s,k)
 end
+if type(oldidx)=="table" then
+return oldidx[k]
 end
-return old(s,...)
-end)
+return nil
+end
+local function isa()
+if sai then return true end
+local ok=pcall(function()
+if type(getrawmetatable)~="function" then error("a") end
+if type(setreadonly)~="function" then error("b") end
+local mt=getrawmetatable(game)
+if not mt then error("c") end
+oldidx=mt.__index
+setreadonly(mt,false)
+if type(newcclosure)=="function" then
+mt.__index=newcclosure(aimHook)
+else
+mt.__index=aimHook
+end
+setreadonly(mt,true)
 sai=true
 end)
 return ok
@@ -398,7 +380,14 @@ end
 local function rsa()
 if not sai then return end
 pcall(function()
-if type(restorefunction)=="function" then restorefunction(game,"__namecall") end
+if type(getrawmetatable)=="function" then
+if type(setreadonly)=="function" then
+local mt=getrawmetatable(game)
+setreadonly(mt,false)
+mt.__index=oldidx
+setreadonly(mt,true)
+end
+end
 end)
 sai=false
 end
@@ -468,40 +457,34 @@ at=nil
 return true
 end
 end
-local hf2=false
-local function fl()
-local c,h,v,m=nil,nil,nil,0.1
-while hf2 do
+local function doFling(tr)
+local r=gr()
+if not r then return end
+local oc=r.CFrame
+pcall(function() r.CFrame=tr.CFrame*CFrame.new(0,0,1) end)
+local t0=tick()
+pcall(function()
+while tick()-t0<0.2 do
 rs.Heartbeat:Wait()
-c=lp.Character
-h=nil
-if c then h=c:FindFirstChild("HumanoidRootPart") end
-if h then
-v=h.Velocity
-h.Velocity=v*10000+Vector3.new(0,10000,0)
-rs.RenderStepped:Wait()
-h.Velocity=v
-rs.Stepped:Wait()
-h.Velocity=v+Vector3.new(0,m,0)
-m=-m
+r.Velocity=r.Velocity*8+Vector3.new(0,800,0)
 end
-end
+end)
+pcall(function() r.Velocity=Vector3.new(0,0,0) end)
+pcall(function() r.CFrame=oc end)
 end
 local function ft()
 if not cfg.cb.fk then return end
 if not ra() then return end
-local r=gr()
-if not r then return end
 local k=gk()
 if not k then return end
 local kr=nil
 if k.Character then kr=k.Character:FindFirstChild("HumanoidRootPart") end
 if not kr then return end
-hf2=true
-local co=coroutine.create(fl)
-coroutine.resume(co)
-wait(0.5)
-hf2=false
+local r=gr()
+if not r then return end
+if (kr.Position-r.Position).Magnitude<6 then
+doFling(kr)
+end
 end
 local function kt()
 local r=gr()
@@ -970,6 +953,23 @@ at2(mp,"Speed",false,function(v) cfg.mv.spd=v end)
 as(mp,"Speed Value",16,120,60,function(v) cfg.mv.sv=v end)
 as(mp,"Fly Speed",20,200,60,function(v) cfg.mv.fs=v end)
 at2(mp,"Infinite Jump",false,function(v) cfg.mv.ij=v end)
+local ub=mk("TextButton",{
+Size=UDim2.new(1,-4,0,36),
+BackgroundColor3=th.Ad,
+Text="Unbug",
+TextColor3=th.Kn,
+Font=Enum.Font.GothamBold,
+TextSize=13,
+BorderSizePixel=0
+},mp)
+mk("UICorner",{CornerRadius=UDim.new(0,7)},ub)
+ub.MouseButton1Click:Connect(function()
+local r=gr()
+if r then
+r.Velocity=Vector3.new(0,0,0)
+pcall(function() r.CFrame=CFrame.new(0,50,0) end)
+end
+end)
 local flist=mk("ScrollingFrame",{
 Size=UDim2.new(1,-4,1,-40),
 Position=UDim2.new(0,2,0,38),
@@ -1014,13 +1014,7 @@ TextXAlignment=Enum.TextXAlignment.Left
 row.MouseButton1Click:Connect(function()
 local tr=nil
 if p.Character then tr=p.Character:FindFirstChild("HumanoidRootPart") end
-if tr then
-hf2=true
-local co=coroutine.create(fl)
-coroutine.resume(co)
-wait(0.5)
-hf2=false
-end
+if tr then doFling(tr) end
 end)
 end
 end
