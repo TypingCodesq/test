@@ -2,7 +2,6 @@ if not game:IsLoaded() then
     game.Loaded:Wait()
 end
 
--- Anti-hook detection
 local function checkHooks()
     if getgenv and getgenv().HookDetection then return true end
     if debug.gethook then
@@ -21,6 +20,7 @@ local ts = game:GetService("TweenService")
 local lt = game:GetService("Lighting")
 local cg = game:GetService("CoreGui")
 local sgui = game:GetService("StarterGui")
+local db = game:GetService("Debris")
 
 local lp = ps.LocalPlayer
 local cam = workspace.CurrentCamera
@@ -29,16 +29,13 @@ local wt = (task and task.wait) or wait
 local sp = (task and task.spawn) or spawn
 
 local logo = 134441968486950
+local alive = true
 
 pcall(function()
-    local a = cg:FindFirstChild("XScript")
-    if a then a:Destroy() end
-    local b = cg:FindFirstChild("XScript_ESP")
-    if b then b:Destroy() end
-    local c = cg:FindFirstChild("XScript_FlyPad")
-    if c then c:Destroy() end
-    local d = cg:FindFirstChild("XScript_Icon")
-    if d then d:Destroy() end
+    for _, n in ipairs({"XScript","XScript_ESP","XScript_FlyPad","XScript_Icon"}) do
+        local o = cg:FindFirstChild(n)
+        if o then o:Destroy() end
+    end
 end)
 
 local th = {
@@ -55,7 +52,7 @@ local th = {
 
 local cfg = {
     es = { On = false, M = true, S = true, I = false, D = true },
-    cb = { sa = false, ka = false, fk = false },
+    cb = { sa = false, ka = false, fk = false, ad = true },
     mv = { fly = false, fs = 60, nc = false, spd = false, sv = 32, ij = false },
     fm = { cn = false, wp = false },
     vs = { fb = false }
@@ -108,14 +105,67 @@ local function grl(p)
     return "Innocent"
 end
 
--- Safe mode: center of map
+local function roundActive()
+    for _, p in ipairs(ps:GetPlayers()) do
+        if p ~= lp and grl(p) == "Murderer" then return true end
+    end
+    return false
+end
+
+local function getKiller()
+    for _, p in ipairs(ps:GetPlayers()) do
+        if p ~= lp and grl(p) == "Murderer" then return p end
+    end
+    return nil
+end
+
+local lastDodge = 0
 local function safeMode()
+    if not alive then return end
     local r = gr()
-    if not r then return end
-    if r.Position.Y < -50 then
-        pcall(function()
-            r.CFrame = CFrame.new(0, 50, 0)
-        end)
+    local h = gh()
+    if not r or not h then return end
+    if r.Position.Y < -200 then
+        pcall(function() r.CFrame = CFrame.new(0, 50, 0) end)
+    end
+    if not cfg.cb.ad then return end
+    if not roundActive() then return end
+    if tick() - lastDodge < 0.3 then return end
+    local killer = getKiller()
+    if not killer then return end
+    local kr = killer.Character and killer.Character:FindFirstChild("HumanoidRootPart")
+    if not kr then return end
+    local dist = (kr.Position - r.Position).Magnitude
+    if dist < 8 then
+        local kc = killer.Character
+        if kc then
+            for _, t in ipairs(kc:GetChildren()) do
+                if t:IsA("Tool") and t.Name:lower():find("knife") then
+                    pcall(function()
+                        r.CFrame = CFrame.new(r.Position + Vector3.new(math.random(-30,30), 10, math.random(-30,30)))
+                        lastDodge = tick()
+                    end)
+                    return
+                end
+            end
+        end
+    end
+    if dist < 100 then
+        local kh = killer.Character and killer.Character:FindFirstChild("Head")
+        if kh then
+            local toP = (r.Position - kh.Position).Unit
+            local dot = toP:Dot(kh.CFrame.LookVector)
+            if dot > 0.8 then
+                pcall(function()
+                    local h2 = gh()
+                    if h2 then
+                        local perp = Vector3.new(-toP.Z, 0, toP.X)
+                        h2:MoveTo(r.Position + perp * 15)
+                        lastDodge = tick()
+                    end
+                end)
+            end
+        end
     end
 end
 
@@ -227,6 +277,7 @@ local function fk(f, k)
 end
 
 local function hf()
+    if not alive then return end
     local r = gr()
     if not r then return end
     if cfg.mv.fly then
@@ -269,23 +320,20 @@ end
 
 local ns = {}
 local function hn()
+    if not alive then return end
     local c = gc()
     if not c then return end
     if cfg.mv.nc then
         for _, p in ipairs(c:GetDescendants()) do
             if p:IsA("BasePart") then
-                if ns[p] == nil then
-                    ns[p] = p.CanCollide
-                end
+                if ns[p] == nil then ns[p] = p.CanCollide end
                 p.CanCollide = false
             end
         end
     else
         if next(ns) then
             for p, v in pairs(ns) do
-                pcall(function()
-                    if p.Parent then p.CanCollide = v end
-                end)
+                pcall(function() if p.Parent then p.CanCollide = v end end)
             end
             ns = {}
         end
@@ -308,9 +356,7 @@ end
 uis.JumpRequest:Connect(function()
     if cfg.mv.ij then
         local h = gh()
-        if h then
-            pcall(function() h:ChangeState(Enum.HumanoidStateType.Jumping) end)
-        end
+        if h then pcall(function() h:ChangeState(Enum.HumanoidStateType.Jumping) end) end
     end
 end)
 
@@ -324,27 +370,18 @@ local at = nil
 local av = Vector3.new(0, 0, 0)
 
 local function ra()
-    if not cfg.cb.sa then
-        at = nil
-        return
-    end
+    if not cfg.cb.sa then at = nil return end
     local c = gc()
     local hg = false
     if c then
         for _, t in ipairs(c:GetChildren()) do
             if t:IsA("Tool") then
                 local n = t.Name:lower()
-                if n == "gun" or n == "revolver" then
-                    hg = true
-                    break
-                end
+                if n == "gun" or n == "revolver" then hg = true break end
             end
         end
     end
-    if not hg then
-        at = nil
-        return
-    end
+    if not hg then at = nil return end
     for _, p in ipairs(ps:GetPlayers()) do
         if p ~= lp and grl(p) == "Murderer" then
             local ch = p.Character
@@ -355,9 +392,7 @@ local function ra()
                     at = bd
                     if rt then
                         local ok, v = pcall(function() return rt.Velocity end)
-                        if ok and typeof(v) == "Vector3" then
-                            av = v
-                        end
+                        if ok and typeof(v) == "Vector3" then av = v end
                     end
                     return
                 end
@@ -500,9 +535,7 @@ local function rrh()
     if not ri then return end
     if type(restorefunction) == "function" then
         pcall(function()
-            for n, _ in pairs(of) do
-                restorefunction(workspace[n])
-            end
+            for n, _ in pairs(of) do restorefunction(workspace[n]) end
         end)
     end
     of = {}
@@ -514,40 +547,102 @@ local function ssa(o)
         local a = imh()
         local b = inh()
         local c = irh()
+        setupKnife()
         return a or b or c
     else
         rmh()
         rnh()
         rrh()
+        clearKnife()
         at = nil
         return true
     end
 end
 
--- Fling Killer
-local function fkTick()
-    if not cfg.cb.fk then return end
-    local ch = gc()
-    local r = gr()
-    if not ch or not r then return end
-    
-    local myRoot = r
-    for _, p in ipairs(ps:GetPlayers()) do
-        if p ~= lp and grl(p) == "Murderer" then
-            local theirCh = p.Character
-            local theirRoot = theirCh and theirCh:FindFirstChild("HumanoidRootPart")
-            if theirRoot and (theirRoot.Position - myRoot.Position).Magnitude < 5 then
-                -- Touch detected, fling them
-                pcall(function()
-                    local bv = Instance.new("BodyVelocity")
-                    bv.MaxForce = Vector3.new(500000, 500000, 500000)
-                    bv.Velocity = Vector3.new(math.random(-100, 100), 200, math.random(-100, 100))
-                    bv.Parent = theirRoot
-                    game.Debris:AddItem(bv, 0.1)
-                end)
+-- Knife wallbang (murderer): swing also kills a random player through walls
+local knifeConn = nil
+local inKnife = false
+local function clearKnife()
+    if knifeConn then
+        pcall(function() knifeConn:Disconnect() end)
+        knifeConn = nil
+    end
+end
+local function setupKnife()
+    clearKnife()
+    local c = gc()
+    if not c then return end
+    local knife = nil
+    for _, t in ipairs(c:GetChildren()) do
+        if t:IsA("Tool") and t.Name:lower():find("knife") then knife = t break end
+    end
+    if not knife then return end
+    knifeConn = knife.Activated:Connect(function()
+        if not cfg.cb.sa then return end
+        if inKnife then return end
+        inKnife = true
+        local r = gr()
+        if r then
+            local targets = {}
+            for _, p in ipairs(ps:GetPlayers()) do
+                if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                    local h = fbc(p.Character, "Humanoid")
+                    if h and h.Health > 0 then table.insert(targets, p) end
+                end
+            end
+            if #targets > 0 then
+                local t = targets[math.random(1, #targets)]
+                local tr = t.Character:FindFirstChild("HumanoidRootPart")
+                local origin = r.CFrame
+                pcall(function() r.CFrame = tr.CFrame * CFrame.new(0, 0, 2) end)
+                wt(0.05)
+                pcall(function() knife:Activate() end)
+                wt(0.1)
+                pcall(function() r.CFrame = origin end)
             end
         end
-    end
+        inKnife = false
+    end)
+end
+
+local function fkTick()
+    if not cfg.cb.fk then return end
+    if not roundActive() then return end
+    local r = gr()
+    if not r then return end
+    local killer = getKiller()
+    if not killer then return end
+    local kr = killer.Character and killer.Character:FindFirstChild("HumanoidRootPart")
+    if not kr then return end
+    local origin = r.CFrame
+    pcall(function() r.CFrame = kr.CFrame * CFrame.new(0, 0, 2) end)
+    pcall(function()
+        local bv = Instance.new("BodyVelocity")
+        bv.MaxForce = Vector3.new(1000000, 1000000, 1000000)
+        bv.Velocity = Vector3.new(math.random(-200,200), 300, math.random(-200,200))
+        bv.Parent = kr
+        db:AddItem(bv, 0.3)
+    end)
+    wt(0.2)
+    pcall(function() r.CFrame = origin end)
+end
+
+local function flingPlayer(p)
+    local r = gr()
+    if not r then return end
+    local tr = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+    if not tr then return end
+    local origin = r.CFrame
+    pcall(function() r.CFrame = tr.CFrame * CFrame.new(0, 0, 2) end)
+    pcall(function()
+        local bv = Instance.new("BodyVelocity")
+        bv.MaxForce = Vector3.new(1000000, 1000000, 1000000)
+        bv.Velocity = Vector3.new(math.random(-200,200), 300, math.random(-200,200))
+        bv.Parent = tr
+        db:AddItem(bv, 0.3)
+    end)
+    wt(0.2)
+    pcall(function() r.CFrame = origin end)
 end
 
 local function kaTick()
@@ -556,9 +651,7 @@ local function kaTick()
     if not r or not c then return end
     local k = nil
     for _, t in ipairs(c:GetChildren()) do
-        if t:IsA("Tool") and t.Name:lower():find("knife") then
-            k = t
-        end
+        if t:IsA("Tool") and t.Name:lower():find("knife") then k = t end
     end
     if not k then return end
     local o = r.CFrame
@@ -649,38 +742,25 @@ local function ws()
             local n = o.Name:lower()
             if mn(n, wn) and not iip(o) then
                 local p = gip(o)
-                if p then
-                    pk = pw(p)
-                    break
-                end
+                if p then pk = pw(p) break end
             end
         end
     end
     if pk then
         cfg.fm.wp = false
-        if wc then
-            pcall(function() wc.SetState(false) end)
-        end
+        if wc then pcall(function() wc.SetState(false) end) end
     end
 end
 
 local function ft()
-    if cfg.fm.cn then
-        pcall(cs)
-    end
+    if cfg.fm.cn then pcall(cs) end
 end
 
 local lb = nil
 local function sfb(o)
     if o then
         if not lb then
-            lb = {
-                B = lt.Brightness,
-                C = lt.ClockTime,
-                F = lt.FogEnd,
-                G = lt.GlobalShadows,
-                O = lt.OutdoorAmbient
-            }
+            lb = { B = lt.Brightness, C = lt.ClockTime, F = lt.FogEnd, G = lt.GlobalShadows, O = lt.OutdoorAmbient }
         end
         lt.Brightness = 2
         lt.ClockTime = 14
@@ -700,6 +780,7 @@ local function sfb(o)
 end
 
 rs.RenderStepped:Connect(function()
+    if not alive then return end
     local ok, err = pcall(function()
         hf()
         hs()
@@ -709,26 +790,27 @@ rs.RenderStepped:Connect(function()
 end)
 
 rs.Stepped:Connect(function()
+    if not alive then return end
     local ok, err = pcall(hn)
     if not ok then once("noclip", err) end
 end)
 
-local function lp(iv, k, fn)
+local function lpp(iv, k, f)
     sp(function()
-        while true do
+        while alive do
             wt(iv)
-            local ok, err = pcall(fn)
+            local ok, err = pcall(f)
             if not ok then once(k, err) end
         end
     end)
 end
 
-lp(0.25, "esp", ue)
-lp(0.1, "farm", ft)
-lp(0.6, "weapons", function() if cfg.fm.wp then ws() end end)
-lp(0.05, "killall", function() if cfg.cb.ka then kaTick() end end)
-lp(0.1, "fling", fkTick)
-lp(0.1, "aimcache", ra)
+lpp(0.25, "esp", ue)
+lpp(0.1, "farm", ft)
+lpp(0.6, "weapons", function() if cfg.fm.wp then ws() end end)
+lpp(0.05, "killall", function() if cfg.cb.ka then kaTick() end end)
+lpp(0.3, "fling", fkTick)
+lpp(0.1, "aimcache", ra)
 
 local function mk(cl, pr, pa)
     local i = Instance.new(cl)
@@ -741,11 +823,7 @@ local vp = cam.ViewportSize
 local W = math.clamp(vp.X * 0.52, 300, 520)
 local H = math.clamp(vp.Y * 0.62, 230, 400)
 
-local ui = mk("ScreenGui", {
-    Name = "XScript",
-    ResetOnSpawn = false,
-    ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-}, cg)
+local ui = mk("ScreenGui", { Name = "XScript", ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling }, cg)
 
 local mn = mk("Frame", {
     Size = UDim2.fromOffset(W, H),
@@ -758,25 +836,11 @@ local mn = mk("Frame", {
 mk("UICorner", { CornerRadius = UDim.new(0, 10) }, mn)
 mk("UIStroke", { Color = th.St, Thickness = 1 }, mn)
 
-local tb = mk("Frame", {
-    Size = UDim2.new(1, 0, 0, 36),
-    BackgroundColor3 = th.Pn,
-    BorderSizePixel = 0
-}, mn)
+local tb = mk("Frame", { Size = UDim2.new(1, 0, 0, 36), BackgroundColor3 = th.Pn, BorderSizePixel = 0 }, mn)
 mk("UICorner", { CornerRadius = UDim.new(0, 10) }, tb)
-mk("Frame", {
-    Size = UDim2.new(1, 0, 0, 12),
-    Position = UDim2.new(0, 0, 1, -12),
-    BackgroundColor3 = th.Pn,
-    BorderSizePixel = 0
-}, tb)
+mk("Frame", { Size = UDim2.new(1, 0, 0, 12), Position = UDim2.new(0, 0, 1, -12), BackgroundColor3 = th.Pn, BorderSizePixel = 0 }, tb)
 
-local ib = mk("Frame", {
-    Size = UDim2.new(0, 26, 0, 26),
-    Position = UDim2.new(0, 6, 0.5, -13),
-    BackgroundColor3 = th.Pl,
-    BorderSizePixel = 0
-}, tb)
+local ib = mk("Frame", { Size = UDim2.new(0, 26, 0, 26), Position = UDim2.new(0, 6, 0.5, -13), BackgroundColor3 = th.Pl, BorderSizePixel = 0 }, tb)
 mk("UICorner", { CornerRadius = UDim.new(0, 6) }, ib)
 
 local io = false
@@ -791,18 +855,11 @@ if logo ~= 0 then
     end)
 end
 if not io then
-    mk("TextLabel", {
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1,
-        Text = "X",
-        TextColor3 = th.Ac,
-        Font = Enum.Font.GothamBlack,
-        TextSize = 16
-    }, ib)
+    mk("TextLabel", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "X", TextColor3 = th.Ac, Font = Enum.Font.GothamBlack, TextSize = 16 }, ib)
 end
 
 mk("TextLabel", {
-    Size = UDim2.new(1, -116, 1, 0),
+    Size = UDim2.new(1, -140, 1, 0),
     Position = UDim2.new(0, 38, 0, 0),
     BackgroundTransparency = 1,
     Text = "X-SCRIPT",
@@ -827,18 +884,14 @@ local function tbtn(t, xo, bg)
     return b
 end
 
+local mb = tbtn("-", -70, th.Pl)
 local cb = tbtn("X", -36, th.Ad)
 
-local minimized = false
 local iconGui = nil
 
 local function createIcon()
-    iconGui = mk("ScreenGui", {
-        Name = "XScript_Icon",
-        ResetOnSpawn = false,
-        ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    }, cg)
-    
+    if iconGui then return end
+    iconGui = mk("ScreenGui", { Name = "XScript_Icon", ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling }, cg)
     local iconFrame = mk("Frame", {
         Size = UDim2.fromOffset(50, 50),
         Position = UDim2.new(0, 10, 0.5, -25),
@@ -849,7 +902,6 @@ local function createIcon()
     }, iconGui)
     mk("UICorner", { CornerRadius = UDim.new(0, 10) }, iconFrame)
     mk("UIStroke", { Color = th.St, Thickness = 2 }, iconFrame)
-    
     if logo ~= 0 then
         pcall(function()
             local img = Instance.new("ImageLabel")
@@ -860,28 +912,27 @@ local function createIcon()
             img.Parent = iconFrame
         end)
     else
-        mk("TextLabel", {
-            Size = UDim2.new(1, 0, 1, 0),
-            BackgroundTransparency = 1,
-            Text = "X",
-            TextColor3 = th.Ac,
-            Font = Enum.Font.GothamBlack,
-            TextSize = 28
-        }, iconFrame)
+        mk("TextLabel", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "X", TextColor3 = th.Ac, Font = Enum.Font.GothamBlack, TextSize = 28 }, iconFrame)
     end
-    
     iconFrame.MouseButton1Click:Connect(function()
-        minimized = false
         mn.Visible = true
         iconGui.Enabled = false
+        iconGui = nil
     end)
 end
 
-cb.MouseButton1Click:Connect(function()
-    minimized = true
+mb.MouseButton1Click:Connect(function()
     mn.Visible = false
     createIcon()
     iconGui.Enabled = true
+end)
+
+cb.MouseButton1Click:Connect(function()
+    alive = false
+    pcall(function() ui:Destroy() end)
+    pcall(function() if iconGui then iconGui:Destroy() end end)
+    pcall(function() es:Destroy() end)
+    pcall(function() fp:Destroy() end)
 end)
 
 local di = nil
@@ -896,7 +947,7 @@ end
 uis.InputBegan:Connect(function(i, pr)
     if pr then return end
     if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then
-        if inb(i.Position, tb) and not inb(i.Position, cb) then
+        if inb(i.Position, tb) and not inb(i.Position, cb) and not inb(i.Position, mb) then
             di = i
             doff = Vector2.new(i.Position.X - mn.AbsolutePosition.X, i.Position.Y - mn.AbsolutePosition.Y)
         end
@@ -913,35 +964,17 @@ uis.InputEnded:Connect(function(i)
     if i == di then di = nil end
 end)
 
-local ts2 = mk("ScrollingFrame", {
-    Size = UDim2.new(1, -8, 0, 32),
-    Position = UDim2.new(0, 4, 0, 40),
-    BackgroundTransparency = 1,
-    ScrollBarThickness = 0,
-    BorderSizePixel = 0
-}, mn)
+local ts2 = mk("ScrollingFrame", { Size = UDim2.new(1, -8, 0, 32), Position = UDim2.new(0, 4, 0, 40), BackgroundTransparency = 1, ScrollBarThickness = 0, BorderSizePixel = 0 }, mn)
 
-local sl = mk("UIListLayout", {
-    FillDirection = Enum.FillDirection.Horizontal,
-    Padding = UDim.new(0, 5)
-}, ts2)
+local sl = mk("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 5) }, ts2)
 
 sl:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     ts2.CanvasSize = UDim2.new(0, sl.AbsoluteContentSize.X + 8, 0, 0)
 end)
 
-local ph = mk("Frame", {
-    Size = UDim2.new(1, -8, 1, -78),
-    Position = UDim2.new(0, 4, 0, 74),
-    BackgroundTransparency = 1,
-    ClipsDescendants = true
-}, mn)
+local ph = mk("Frame", { Size = UDim2.new(1, -8, 1, -78), Position = UDim2.new(0, 4, 0, 74), BackgroundTransparency = 1, ClipsDescendants = true }, mn)
 
-local fp = mk("ScreenGui", {
-    Name = "XScript_FlyPad",
-    ResetOnSpawn = false,
-    ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-}, cg)
+local fp = mk("ScreenGui", { Name = "XScript_FlyPad", ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling }, cg)
 fp.Enabled = false
 
 local function pb(f, t, px, py)
@@ -958,13 +991,9 @@ local function pb(f, t, px, py)
     mk("UICorner", { CornerRadius = UDim.new(0, 10) }, b)
     mk("UIStroke", { Color = th.St, Thickness = 1 }, b)
     b.InputBegan:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then
-            fi[f] = true
-        end
+        if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then fi[f] = true end
     end)
-    b.InputEnded:Connect(function()
-        fi[f] = false
-    end)
+    b.InputEnded:Connect(function() fi[f] = false end)
     return b
 end
 
@@ -977,64 +1006,20 @@ pb("D", "D", -260, -90)
 
 local tabs = {}
 local function ct(n, ht)
-    local btn = mk("TextButton", {
-        Size = UDim2.new(0, 70, 1, 0),
-        BackgroundColor3 = th.Pn,
-        Text = n,
-        TextColor3 = th.Td,
-        Font = Enum.Font.GothamBold,
-        TextSize = 13,
-        BorderSizePixel = 0
-    }, ts2)
+    local btn = mk("TextButton", { Size = UDim2.new(0, 70, 1, 0), BackgroundColor3 = th.Pn, Text = n, TextColor3 = th.Td, Font = Enum.Font.GothamBold, TextSize = 13, BorderSizePixel = 0 }, ts2)
     mk("UICorner", { CornerRadius = UDim.new(0, 6) }, btn)
-
-    local ct = mk("Frame", {
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1,
-        Visible = false,
-        ClipsDescendants = true
-    }, ph)
-
-    local hd = mk("Frame", {
-        Size = UDim2.new(1, 0, 0, 24),
-        Position = UDim2.new(0, 0, 0, 0),
-        BackgroundColor3 = th.Pl,
-        BorderSizePixel = 0
-    }, ct)
+    local ct = mk("Frame", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Visible = false, ClipsDescendants = true }, ph)
+    local hd = mk("Frame", { Size = UDim2.new(1, 0, 0, 24), Position = UDim2.new(0, 0, 0, 0), BackgroundColor3 = th.Pl, BorderSizePixel = 0 }, ct)
     mk("UICorner", { CornerRadius = UDim.new(0, 6) }, hd)
-
-    mk("TextLabel", {
-        Size = UDim2.new(1, -8, 1, 0),
-        Position = UDim2.new(0, 8, 0, 0),
-        BackgroundTransparency = 1,
-        Text = ht,
-        TextColor3 = th.Kn,
-        Font = Enum.Font.GothamBold,
-        TextSize = 12,
-        TextXAlignment = Enum.TextXAlignment.Left
-    }, hd)
-
-    local pg = mk("ScrollingFrame", {
-        Size = UDim2.new(1, 0, 1, -28),
-        Position = UDim2.new(0, 0, 0, 28),
-        BackgroundTransparency = 1,
-        ScrollBarThickness = 3,
-        ScrollBarImageColor3 = th.Ac,
-        BorderSizePixel = 0
-    }, ct)
+    mk("TextLabel", { Size = UDim2.new(1, -8, 1, 0), Position = UDim2.new(0, 8, 0, 0), BackgroundTransparency = 1, Text = ht, TextColor3 = th.Kn, Font = Enum.Font.GothamBold, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left }, hd)
+    local pg = mk("ScrollingFrame", { Size = UDim2.new(1, 0, 1, -28), Position = UDim2.new(0, 0, 0, 28), BackgroundTransparency = 1, ScrollBarThickness = 3, ScrollBarImageColor3 = th.Ac, BorderSizePixel = 0 }, ct)
     local ly = mk("UIListLayout", { Padding = UDim.new(0, 5) }, pg)
-    mk("UIPadding", {
-        PaddingTop = UDim.new(0, 2),
-        PaddingLeft = UDim.new(0, 2),
-        PaddingRight = UDim.new(0, 4)
-    }, pg)
+    mk("UIPadding", { PaddingTop = UDim.new(0, 2), PaddingLeft = UDim.new(0, 2), PaddingRight = UDim.new(0, 4) }, pg)
     ly:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         pg.CanvasSize = UDim2.new(0, 0, 0, ly.AbsoluteContentSize.Y + 6)
     end)
-
     local tb = { Button = btn, Container = ct }
     table.insert(tabs, tb)
-
     local function st()
         for _, t in ipairs(tabs) do
             t.Container.Visible = false
@@ -1045,55 +1030,21 @@ local function ct(n, ht)
         btn.BackgroundColor3 = th.Ac
         btn.TextColor3 = th.Kn
     end
-
     btn.MouseButton1Click:Connect(st)
     if #tabs == 1 then st() end
-
     return pg
 end
 
 local function at2(pg, t, d, cb)
-    local r = mk("Frame", {
-        Size = UDim2.new(1, -4, 0, 36),
-        BackgroundColor3 = th.Pn,
-        BorderSizePixel = 0
-    }, pg)
+    local r = mk("Frame", { Size = UDim2.new(1, -4, 0, 36), BackgroundColor3 = th.Pn, BorderSizePixel = 0 }, pg)
     mk("UICorner", { CornerRadius = UDim.new(0, 7) }, r)
-
-    local l = mk("TextLabel", {
-        Size = UDim2.new(1, -60, 1, 0),
-        Position = UDim2.new(0, 10, 0, 0),
-        BackgroundTransparency = 1,
-        Text = t,
-        TextColor3 = th.Tx,
-        Font = Enum.Font.Gotham,
-        TextSize = 13,
-        TextXAlignment = Enum.TextXAlignment.Left
-    }, r)
-
-    local tr = mk("Frame", {
-        Size = UDim2.new(0, 42, 0, 22),
-        Position = UDim2.new(1, -50, 0.5, -11),
-        BackgroundColor3 = d and th.Ac or th.Pl,
-        BorderSizePixel = 0
-    }, r)
+    local l = mk("TextLabel", { Size = UDim2.new(1, -60, 1, 0), Position = UDim2.new(0, 10, 0, 0), BackgroundTransparency = 1, Text = t, TextColor3 = th.Tx, Font = Enum.Font.Gotham, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left }, r)
+    local tr = mk("Frame", { Size = UDim2.new(0, 42, 0, 22), Position = UDim2.new(1, -50, 0.5, -11), BackgroundColor3 = d and th.Ac or th.Pl, BorderSizePixel = 0 }, r)
     mk("UICorner", { CornerRadius = UDim.new(1, 0) }, tr)
-
-    local kn = mk("Frame", {
-        Size = UDim2.new(0, 16, 0, 16),
-        Position = d and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8),
-        BackgroundColor3 = th.Kn,
-        BorderSizePixel = 0
-    }, tr)
+    local kn = mk("Frame", { Size = UDim2.new(0, 16, 0, 16), Position = d and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8), BackgroundColor3 = th.Kn, BorderSizePixel = 0 }, tr)
     mk("UICorner", { CornerRadius = UDim.new(1, 0) }, kn)
-
     local st = d
-    local h = mk("TextButton", {
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1,
-        Text = ""
-    }, r)
-
+    local h = mk("TextButton", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "" }, r)
     local ct = {}
     function ct.SetText(t) l.Text = t end
     function ct.SetState(s)
@@ -1103,61 +1054,20 @@ local function at2(pg, t, d, cb)
         kn.Position = st and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)
         if cb then cb(st) end
     end
-
-    h.MouseButton1Click:Connect(function()
-        ct.SetState(not st)
-    end)
-
+    h.MouseButton1Click:Connect(function() ct.SetState(not st) end)
     return ct
 end
 
 local function as(pg, t, mi, mx, d, cb)
-    local r = mk("Frame", {
-        Size = UDim2.new(1, -4, 0, 42),
-        BackgroundColor3 = th.Pn,
-        BorderSizePixel = 0
-    }, pg)
+    local r = mk("Frame", { Size = UDim2.new(1, -4, 0, 42), BackgroundColor3 = th.Pn, BorderSizePixel = 0 }, pg)
     mk("UICorner", { CornerRadius = UDim.new(0, 7) }, r)
-
-    mk("TextLabel", {
-        Size = UDim2.new(0.55, 0, 0, 18),
-        Position = UDim2.new(0, 10, 0, 4),
-        BackgroundTransparency = 1,
-        Text = t,
-        TextColor3 = th.Tx,
-        Font = Enum.Font.Gotham,
-        TextSize = 12,
-        TextXAlignment = Enum.TextXAlignment.Left
-    }, r)
-
-    local vl = mk("TextLabel", {
-        Size = UDim2.new(0.45, -10, 0, 18),
-        Position = UDim2.new(0.55, 0, 0, 4),
-        BackgroundTransparency = 1,
-        Text = tostring(d),
-        TextColor3 = th.Kn,
-        Font = Enum.Font.GothamBold,
-        TextSize = 12,
-        TextXAlignment = Enum.TextXAlignment.Right
-    }, r)
-
-    local br = mk("Frame", {
-        Position = UDim2.new(0, 10, 0, 27),
-        Size = UDim2.new(1, -20, 0, 8),
-        BackgroundColor3 = th.Pl,
-        BorderSizePixel = 0
-    }, r)
+    mk("TextLabel", { Size = UDim2.new(0.55, 0, 0, 18), Position = UDim2.new(0, 10, 0, 4), BackgroundTransparency = 1, Text = t, TextColor3 = th.Tx, Font = Enum.Font.Gotham, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left }, r)
+    local vl = mk("TextLabel", { Size = UDim2.new(0.45, -10, 0, 18), Position = UDim2.new(0.55, 0, 0, 4), BackgroundTransparency = 1, Text = tostring(d), TextColor3 = th.Kn, Font = Enum.Font.GothamBold, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Right }, r)
+    local br = mk("Frame", { Position = UDim2.new(0, 10, 0, 27), Size = UDim2.new(1, -20, 0, 8), BackgroundColor3 = th.Pl, BorderSizePixel = 0 }, r)
     mk("UICorner", { CornerRadius = UDim.new(1, 0) }, br)
-
-    local fl = mk("Frame", {
-        Size = UDim2.new((d - mi) / (mx - mi), 0, 1, 0),
-        BackgroundColor3 = th.Ac,
-        BorderSizePixel = 0
-    }, br)
+    local fl = mk("Frame", { Size = UDim2.new((d - mi) / (mx - mi), 0, 1, 0), BackgroundColor3 = th.Ac, BorderSizePixel = 0 }, br)
     mk("UICorner", { CornerRadius = UDim.new(1, 0) }, fl)
-
     local dg = false
-
     local function sfx(x)
         local rl = (x - br.AbsolutePosition.X) / br.AbsoluteSize.X
         if rl < 0 then rl = 0 end
@@ -1167,24 +1077,14 @@ local function as(pg, t, mi, mx, d, cb)
         vl.Text = tostring(v)
         if cb then cb(v) end
     end
-
     br.InputBegan:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-            dg = true
-            sfx(i.Position.X)
-        end
+        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dg = true sfx(i.Position.X) end
     end)
-
     br.InputEnded:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-            dg = false
-        end
+        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dg = false end
     end)
-
     uis.InputChanged:Connect(function(i)
-        if dg and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
-            sfx(i.Position.X)
-        end
+        if dg and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then sfx(i.Position.X) end
     end)
 end
 
@@ -1192,6 +1092,7 @@ local cp = ct("Combat", "COMBAT")
 local ep = ct("ESP", "ESP")
 local fp2 = ct("Farm", "COLLECT")
 local mp = ct("Move", "MOVEMENT")
+local flp = ct("Fling", "FLING USER")
 local ip = ct("Info", "INFO")
 
 at2(cp, "Silent Aim", false, function(v)
@@ -1200,9 +1101,7 @@ at2(cp, "Silent Aim", false, function(v)
         local ok = ssa(true)
         if not ok then
             pcall(function()
-                sgui:SetCore("SendNotification", {
-                    Title = "X-SCRIPT", Text = "Tu executor no soporta hooks", Duration = 4
-                })
+                sgui:SetCore("SendNotification", { Title = "X-SCRIPT", Text = "Tu executor no soporta hooks", Duration = 4 })
             end)
         end
     else
@@ -1211,6 +1110,7 @@ at2(cp, "Silent Aim", false, function(v)
 end)
 at2(cp, "Kill All", false, function(v) cfg.cb.ka = v end)
 at2(cp, "Fling Killer", false, function(v) cfg.cb.fk = v end)
+at2(cp, "Auto Dodge", true, function(v) cfg.cb.ad = v end)
 
 at2(ep, "Enable ESP", false, function(v) cfg.es.On = v end)
 at2(ep, "Show Murderer", true, function(v) cfg.es.M = v end)
@@ -1223,9 +1123,7 @@ wc = at2(fp2, "Collect Weapons", false, function(v) cfg.fm.wp = v end)
 
 at2(mp, "Fly", false, function(v)
     cfg.mv.fly = v
-    if not v then
-        for k in pairs(fi) do fi[k] = false end
-    end
+    if not v then for k in pairs(fi) do fi[k] = false end end
     fp.Enabled = v and uis.TouchEnabled
 end)
 at2(mp, "Noclip", false, function(v) cfg.mv.nc = v end)
@@ -1234,17 +1132,69 @@ as(mp, "Speed Value", 16, 120, 60, function(v) cfg.mv.sv = v end)
 as(mp, "Fly Speed", 20, 200, 60, function(v) cfg.mv.fs = v end)
 at2(mp, "Infinite Jump", false, function(v) cfg.mv.ij = v end)
 
--- Info tab
+-- Fling User list
+local flist = mk("ScrollingFrame", {
+    Size = UDim2.new(1, -4, 1, -40),
+    Position = UDim2.new(0, 2, 0, 38),
+    BackgroundTransparency = 1,
+    ScrollBarThickness = 3,
+    ScrollBarImageColor3 = th.Ac,
+    BorderSizePixel = 0
+}, flp)
+local fly2 = mk("UIListLayout", { Padding = UDim.new(0, 5) }, flist)
+
+local function buildFlingList()
+    for _, ch in ipairs(flist:GetChildren()) do
+        if ch:IsA("TextButton") then ch:Destroy() end
+    end
+    for _, p in ipairs(ps:GetPlayers()) do
+        if p ~= lp then
+            local row = mk("TextButton", {
+                Size = UDim2.new(1, -4, 0, 40),
+                BackgroundColor3 = th.Pn,
+                Text = "",
+                BorderSizePixel = 0
+            }, flist)
+            mk("UICorner", { CornerRadius = UDim.new(0, 7) }, row)
+            local av = mk("ImageLabel", {
+                Size = UDim2.new(0, 32, 0, 32),
+                Position = UDim2.new(0, 4, 0.5, -16),
+                BackgroundTransparency = 1
+            }, row)
+            mk("UICorner", { CornerRadius = UDim.new(0, 6) }, av)
+            pcall(function()
+                av.Image = "rbxthumb://type=AvatarHeadShot&id=" .. p.UserId .. "&w=48&h=48"
+            end)
+            mk("TextLabel", {
+                Size = UDim2.new(1, -44, 1, 0),
+                Position = UDim2.new(0, 40, 0, 0),
+                BackgroundTransparency = 1,
+                Text = p.Name,
+                TextColor3 = th.Tx,
+                Font = Enum.Font.Gotham,
+                TextSize = 13,
+                TextXAlignment = Enum.TextXAlignment.Left
+            }, row)
+            row.MouseButton1Click:Connect(function() flingPlayer(p) end)
+        end
+    end
+end
+
+local rbtn = mk("TextButton", {
+    Size = UDim2.new(1, -4, 0, 32),
+    BackgroundColor3 = th.Ac,
+    Text = "Refresh List",
+    TextColor3 = th.Kn,
+    Font = Enum.Font.GothamBold,
+    TextSize = 13,
+    BorderSizePixel = 0
+}, flp)
+mk("UICorner", { CornerRadius = UDim.new(0, 7) }, rbtn)
+rbtn.MouseButton1Click:Connect(buildFlingList)
+buildFlingList()
+
 local function addButton(pg, text, callback)
-    local btn = mk("TextButton", {
-        Size = UDim2.new(1, -4, 0, 36),
-        BackgroundColor3 = th.Ac,
-        Text = text,
-        TextColor3 = th.Kn,
-        Font = Enum.Font.GothamBold,
-        TextSize = 13,
-        BorderSizePixel = 0
-    }, pg)
+    local btn = mk("TextButton", { Size = UDim2.new(1, -4, 0, 36), BackgroundColor3 = th.Ac, Text = text, TextColor3 = th.Kn, Font = Enum.Font.GothamBold, TextSize = 13, BorderSizePixel = 0 }, pg)
     mk("UICorner", { CornerRadius = UDim.new(0, 7) }, btn)
     btn.MouseButton1Click:Connect(callback)
     return btn
@@ -1254,19 +1204,9 @@ addButton(ip, "Discord Server", function()
     if setclipboard then
         setclipboard("https://discord.gg/rTdZxp9Djf")
         pcall(function()
-            sgui:SetCore("SendNotification", {
-                Title = "X-SCRIPT", Text = "Link copiado al portapapeles", Duration = 3
-            })
+            sgui:SetCore("SendNotification", { Title = "X-SCRIPT", Text = "Link copiado al portapapeles", Duration = 3 })
         end)
     end
 end)
 
-mk("TextLabel", {
-    Size = UDim2.new(1, -4, 0, 20),
-    BackgroundTransparency = 1,
-    Text = "Credits: X Hub Team",
-    TextColor3 = th.Tx,
-    Font = Enum.Font.Gotham,
-    TextSize = 12,
-    TextXAlignment = Enum.TextXAlignment.Left
-}, ip)
+mk("TextLabel", { Size = UDim2.new(1, -4, 0, 20), BackgroundTransparency = 1, Text = "Credits: X Hub Team", TextColor3 = th.Tx, Font = Enum.Font.Gotham, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left }, ip)
