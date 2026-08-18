@@ -4,6 +4,8 @@ local typeof=typeof or type
 local unpack=unpack or table.unpack
 local tick=tick or function() return os.clock() end
 local clamp=math.clamp or function(v,a,b) if v<a then return a elseif v>b then return b else return v end end
+local wt=(task and task.wait) or wait
+local sp=(task and task.spawn) or spawn
 local function checkHooks()
 if getgenv and getgenv().HookDetection then return true end
 if debug and debug.gethook then if debug.gethook() then print("nice try kid") return false end end
@@ -20,8 +22,6 @@ local db=game:GetService("Debris")
 local lp=ps.LocalPlayer
 local cam=workspace.CurrentCamera
 local ms=lp:GetMouse()
-local wt=task.wait
-local sp=task.spawn
 local logo=134441968486950
 local alive=true
 pcall(function()
