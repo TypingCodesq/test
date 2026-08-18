@@ -37,7 +37,8 @@ end
 local function gc() return lp.Character end
 local function gr()
 local c=gc()
-return c and c:FindFirstChild("HumanoidRootPart")
+if not c then return nil end
+return c:FindFirstChild("HumanoidRootPart")
 end
 local function gh() return fbc(gc(),"Humanoid") end
 local function grl(p)
@@ -51,7 +52,8 @@ for _,it in ipairs(bx:GetChildren()) do
 if it:IsA("Tool") then
 local n=it.Name:lower()
 if n:find("knife") then return "Murderer" end
-if n=="gun" or n=="revolver" then return "Sheriff" end
+if n=="gun" then return "Sheriff" end
+if n=="revolver" then return "Sheriff" end
 end
 end
 end
@@ -59,13 +61,17 @@ return "Innocent"
 end
 local function ra()
 for _,p in ipairs(ps:GetPlayers()) do
-if p~=lp and grl(p)=="Murderer" then return true end
+if p~=lp then
+if grl(p)=="Murderer" then return true end
+end
 end
 return false
 end
 local function gk()
 for _,p in ipairs(ps:GetPlayers()) do
-if p~=lp and grl(p)=="Murderer" then return p end
+if p~=lp then
+if grl(p)=="Murderer" then return p end
+end
 end
 return nil
 end
@@ -74,21 +80,24 @@ local function sm()
 if not alive then return end
 local r=gr()
 local h=gh()
-if not r or not h then return end
+if not r then return end
+if not h then return end
 if r.Position.Y<-200 then sf(function() r.CFrame=CFrame.new(0,50,0) end) end
 if not cfg.cb.ad then return end
 if not ra() then return end
 if tick()-ld<0.3 then return end
 local k=gk()
 if not k then return end
-local kr=k.Character and k.Character:FindFirstChild("HumanoidRootPart")
+local kr=nil
+if k.Character then kr=k.Character:FindFirstChild("HumanoidRootPart") end
 if not kr then return end
 local d=(kr.Position-r.Position).Magnitude
 if d<8 then
 local kc=k.Character
 if kc then
 for _,t in ipairs(kc:GetChildren()) do
-if t:IsA("Tool") and t.Name:lower():find("knife") then
+if t:IsA("Tool") then
+if t.Name:lower():find("knife") then
 sf(function()
 r.CFrame=CFrame.new(r.Position+Vector3.new(math.random(-30,30),10,math.random(-30,30)))
 ld=tick()
@@ -98,8 +107,10 @@ end
 end
 end
 end
+end
 if d<100 then
-local kh=k.Character and k.Character:FindFirstChild("Head")
+local kh=nil
+if k.Character then kh=k.Character:FindFirstChild("Head") end
 if kh then
 local tp=(r.Position-kh.Position).Unit
 local dot=tp:Dot(kh.CFrame.LookVector)
@@ -165,21 +176,27 @@ local c=ec[p]
 if not c then c=ce(p) end
 local ch=p.Character
 local hm=fbc(ch,"Humanoid")
-local hd=ch and ch:FindFirstChild("Head")
-local rt=ch and ch:FindFirstChild("HumanoidRootPart")
-local al=cfg.es.On and ch and hd and rt and hm and hm.Health>0
+local hd=nil
+if ch then hd=ch:FindFirstChild("Head") end
+local rt=nil
+if ch then rt=ch:FindFirstChild("HumanoidRootPart") end
+local al=false
+if cfg.es.On and ch and hd and rt and hm then
+if hm.Health>0 then al=true end
+end
 if al then
 local r=grl(p)
 local sh=false
-if r=="Murderer" and cfg.es.M then sh=true end
-if r=="Sheriff" and cfg.es.S then sh=true end
-if r=="Innocent" and cfg.es.I then sh=true end
+if r=="Murderer" then if cfg.es.M then sh=true end end
+if r=="Sheriff" then if cfg.es.S then sh=true end end
+if r=="Innocent" then if cfg.es.I then sh=true end end
 local co=rc[r]
 if not co then co=Color3.new(1,1,1) end
 if c.B then
 c.B.Adornee=hd
 c.B.Enabled=sh
-if sh and c.L then
+if sh then
+if c.L then
 local t=r
 if cfg.es.D then
 local mr=gr()
@@ -189,13 +206,17 @@ c.L.Text=t
 c.L.TextColor3=co
 end
 end
+end
 else
 if c.B then c.B.Enabled=false end
 end
 end
 end
 end
-local function fk(f,k) return fi[f] or uis:IsKeyDown(k) end
+local function fk(f,k)
+if fi[f] then return true end
+return uis:IsKeyDown(k)
+end
 local function hf()
 if not alive then return end
 local r=gr()
@@ -242,9 +263,11 @@ if not h then return end
 if cfg.mv.spd then
 h.WalkSpeed=cfg.mv.sv
 so=true
-elseif so then
+else
+if so then
 h.WalkSpeed=16
 so=false
+end
 end
 end
 uis.JumpRequest:Connect(function()
@@ -263,13 +286,15 @@ if c then
 for _,t in ipairs(c:GetChildren()) do
 if t:IsA("Tool") then
 local n=t.Name:lower()
-if n=="gun" or n=="revolver" then hg=true break end
+if n=="gun" then hg=true break end
+if n=="revolver" then hg=true break end
 end
 end
 end
 if not hg then at=nil return end
 for _,p in ipairs(ps:GetPlayers()) do
-if p~=lp and grl(p)=="Murderer" then
+if p~=lp then
+if grl(p)=="Murderer" then
 local ch=p.Character
 if ch then
 local rt=ch:FindFirstChild("HumanoidRootPart")
@@ -281,9 +306,14 @@ if bd then
 at=bd
 if rt then
 local ok,v=pcall(function() return rt.Velocity end)
-if ok and type(v)=="userdata" then av=v else av=Vector3.new(0,0,0) end
+if ok then
+if type(v)=="userdata" then av=v else av=Vector3.new(0,0,0) end
+else
+av=Vector3.new(0,0,0)
+end
 end
 return
+end
 end
 end
 end
@@ -294,21 +324,49 @@ local sai=false
 local function isa()
 if sai then return true end
 local ok=pcall(function()
-if type(hookmetamethod)~="function" or type(getnamecallmethod)~="function" then error("no hook") end
+if type(hookmetamethod)~="function" then
+if type(getnamecallmethod)~="function" then
 local old=hookmetamethod(game,"__namecall",function(s,...)
-if cfg.cb.sa and s==workspace then
+if cfg.cb.sa then
+if s==workspace then
 local t=at
-if t and t.Parent then
+if t then
+if t.Parent then
 local m=getnamecallmethod()
 local pos=t.Position+(av*0.1)
 if m=="Raycast" then
 local a={...}
-if type(a[1])=="userdata" and type(a[2])=="userdata" then
+if type(a[1])=="userdata" then
+if type(a[2])=="userdata" then
 local d=pos-a[1]
 if d.Magnitude>0.01 then a[2]=d.Unit*math.min(d.Magnitude+1,999) end
 return old(s,unpack(a))
 end
-elseif m=="FindPartOnRay" or m=="FindPartOnRayWithIgnoreList" or m=="FindPartOnRayWithWhitelist" then
+end
+end
+if m=="FindPartOnRay" then
+local a={...}
+if type(a[1])=="userdata" then
+local o=a[1].Origin
+local d=pos-o
+local nd=d
+if d.Magnitude>0.01 then nd=d.Unit*math.min(d.Magnitude+1,999) end
+a[1]=Ray.new(o,nd)
+return old(s,unpack(a))
+end
+end
+if m=="FindPartOnRayWithIgnoreList" then
+local a={...}
+if type(a[1])=="userdata" then
+local o=a[1].Origin
+local d=pos-o
+local nd=d
+if d.Magnitude>0.01 then nd=d.Unit*math.min(d.Magnitude+1,999) end
+a[1]=Ray.new(o,nd)
+return old(s,unpack(a))
+end
+end
+if m=="FindPartOnRayWithWhitelist" then
 local a={...}
 if type(a[1])=="userdata" then
 local o=a[1].Origin
@@ -321,9 +379,17 @@ end
 end
 end
 end
+end
+end
 return old(s,...)
 end)
 sai=true
+else
+error("no hook")
+end
+else
+error("no hook")
+end
 end)
 return ok
 end
@@ -345,7 +411,9 @@ local c=gc()
 if not c then return end
 local k=nil
 for _,t in ipairs(c:GetChildren()) do
-if t:IsA("Tool") and t.Name:lower():find("knife") then k=t break end
+if t:IsA("Tool") then
+if t.Name:lower():find("knife") then k=t break end
+end
 end
 if not k then return end
 kc=k.Activated:Connect(function()
@@ -356,9 +424,15 @@ local r=gr()
 if r then
 local tg={}
 for _,p in ipairs(ps:GetPlayers()) do
-if p~=lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+if p~=lp then
+if p.Character then
+if p.Character:FindFirstChild("HumanoidRootPart") then
 local h=fbc(p.Character,"Humanoid")
-if h and h.Health>0 then table.insert(tg,p) end
+if h then
+if h.Health>0 then table.insert(tg,p) end
+end
+end
+end
 end
 end
 if #tg>0 then
@@ -398,7 +472,8 @@ local c,h,v,m=nil,nil,nil,0.1
 while hf2 do
 rs.Heartbeat:Wait()
 c=lp.Character
-h=c and c:FindFirstChild("HumanoidRootPart")
+h=nil
+if c then h=c:FindFirstChild("HumanoidRootPart") end
 if h then
 v=h.Velocity
 h.Velocity=v*10000+Vector3.new(0,10000,0)
@@ -417,7 +492,8 @@ local r=gr()
 if not r then return end
 local k=gk()
 if not k then return end
-local kr=k.Character and k.Character:FindFirstChild("HumanoidRootPart")
+local kr=nil
+if k.Character then kr=k.Character:FindFirstChild("HumanoidRootPart") end
 if not kr then return end
 hf2=true
 local co=coroutine.create(fl)
@@ -428,22 +504,31 @@ end
 local function kt()
 local r=gr()
 local c=gc()
-if not r or not c then return end
+if not r then return end
+if not c then return end
 local k=nil
 for _,t in ipairs(c:GetChildren()) do
-if t:IsA("Tool") and t.Name:lower():find("knife") then k=t end
+if t:IsA("Tool") then
+if t.Name:lower():find("knife") then k=t end
+end
 end
 if not k then return end
 local o=r.CFrame
 for _,p in ipairs(ps:GetPlayers()) do
 if not cfg.cb.ka then break end
-if p~=lp and p.Character then
+if p~=lp then
+if p.Character then
 local tr=p.Character:FindFirstChild("HumanoidRootPart")
 local th=fbc(p.Character,"Humanoid")
-if tr and th and th.Health>0 then
+if tr then
+if th then
+if th.Health>0 then
 sf(function() r.CFrame=tr.CFrame*CFrame.new(0,0,2) end)
 sf(function() k:Activate() end)
 wait(0.01)
+end
+end
+end
 end
 end
 end
@@ -460,9 +545,13 @@ end
 local function iip(o)
 for _,p in ipairs(ps:GetPlayers()) do
 local c=p.Character
-if c and o:IsDescendantOf(c) then return true end
+if c then
+if o:IsDescendantOf(c) then return true end
+end
 local b=p:FindFirstChild("Backpack")
-if b and o:IsDescendantOf(b) then return true end
+if b then
+if o:IsDescendantOf(b) then return true end
+end
 end
 return false
 end
@@ -475,16 +564,20 @@ end
 local function cs()
 local r=gr()
 local h=gh()
-if not r or not h or h.Health<=0 then return end
+if not r then return end
+if not h then return end
+if h.Health<=0 then return end
 for _,o in ipairs(workspace:GetDescendants()) do
 if not cfg.fm.cn then return end
 local n=o.Name:lower()
-if mn(n,fn) and not iip(o) then
+if mn(n,fn) then
+if not iip(o) then
 local p=gip(o)
 if p then
 sf(function() r.CFrame=CFrame.new(p.Position+Vector3.new(0,1,0)) end)
 sf(function() h:MoveTo(p.Position) end)
 wait(0.05)
+end
 end
 end
 end
@@ -502,20 +595,26 @@ end
 local function ws()
 local r=gr()
 local h=gh()
-if not r or not h or h.Health<=0 then return end
+if not r then return end
+if not h then return end
+if h.Health<=0 then return end
 local pk=false
 local gd=workspace:FindFirstChild("GunDrop",true)
-if gd and not iip(gd) then
+if gd then
+if not iip(gd) then
 local p=gip(gd)
 if not p then p=gd end
 pk=pw(p)
+end
 else
 for _,o in ipairs(workspace:GetDescendants()) do
 if not cfg.fm.wp then return end
 local n=o.Name:lower()
-if mn(n,wn) and not iip(o) then
+if mn(n,wn) then
+if not iip(o) then
 local p=gip(o)
 if p then pk=pw(p) break end
+end
 end
 end
 end
@@ -725,7 +824,8 @@ BorderSizePixel=0
 mk("UICorner",{CornerRadius=UDim.new(0,10)},b)
 pcall(function() mk("UIStroke",{Color=th.St,Thickness=1},b) end)
 b.InputBegan:Connect(function(i)
-if i.UserInputType==Enum.UserInputType.Touch or i.UserInputType==Enum.UserInputType.MouseButton1 then fi[f]=true end
+if i.UserInputType==Enum.UserInputType.Touch then fi[f]=true end
+if i.UserInputType==Enum.UserInputType.MouseButton1 then fi[f]=true end
 end)
 b.InputEnded:Connect(function() fi[f]=false end)
 return b
@@ -820,13 +920,18 @@ vl.Text=tostring(v)
 if cb then cb(v) end
 end
 br.InputBegan:Connect(function(i)
-if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then dg=true sfx(i.Position.X) end
+if i.UserInputType==Enum.UserInputType.MouseButton1 then dg=true sfx(i.Position.X) end
+if i.UserInputType==Enum.UserInputType.Touch then dg=true sfx(i.Position.X) end
 end)
 br.InputEnded:Connect(function(i)
-if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then dg=false end
+if i.UserInputType==Enum.UserInputType.MouseButton1 then dg=false end
+if i.UserInputType==Enum.UserInputType.Touch then dg=false end
 end)
 uis.InputChanged:Connect(function(i)
-if dg and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then sfx(i.Position.X) end
+if dg then
+if i.UserInputType==Enum.UserInputType.MouseMovement then sfx(i.Position.X) end
+if i.UserInputType==Enum.UserInputType.Touch then sfx(i.Position.X) end
+end
 end)
 end
 local cp=ct("Combat","COMBAT")
@@ -852,7 +957,11 @@ wc=at2(fp2,"Collect Weapons",false,function(v) cfg.fm.wp=v end)
 at2(mp,"Fly",false,function(v)
 cfg.mv.fly=v
 if not v then for k in pairs(fi) do fi[k]=false end end
-fp.Enabled=v and uis.TouchEnabled
+if v then
+if uis.TouchEnabled then fp.Enabled=true end
+else
+fp.Enabled=false
+end
 end)
 at2(mp,"Noclip",false,function(v) cfg.mv.nc=v end)
 at2(mp,"Speed",false,function(v) cfg.mv.spd=v end)
@@ -901,7 +1010,8 @@ TextSize=13,
 TextXAlignment=Enum.TextXAlignment.Left
 },row)
 row.MouseButton1Click:Connect(function()
-local tr=p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+local tr=nil
+if p.Character then tr=p.Character:FindFirstChild("HumanoidRootPart") end
 if tr then
 hf2=true
 local co=coroutine.create(fl)
