@@ -269,6 +269,11 @@ end
 end)
 local at=nil
 local av=Vector3.new(0,0,0)
+local shooting=false
+ms.Button1Down:Connect(function()
+shooting=true
+task.delay(0.2,function() shooting=false end)
+end)
 local function ra()
 if not cfg.cb.sa then at=nil return end
 local c=gc()
@@ -360,7 +365,7 @@ local function inh()
 if type(hookmetamethod)~="function" or type(getnamecallmethod)~="function" then return false end
 local ok=pcall(function()
 on=hookmetamethod(game,"__namecall",function(s,...)
-if cfg.cb.sa and s==workspace then
+if cfg.cb.sa and shooting and s==workspace then
 local t=at
 if t and t.Parent then
 local m=getnamecallmethod()
@@ -402,7 +407,7 @@ for _,n in ipairs(tg) do
 local f=workspace[n]
 if type(f)=="function" then
 of[n]=hookfunction(f,function(...)
-if cfg.cb.sa then
+if cfg.cb.sa and shooting then
 local t=at
 if t and t.Parent then
 local p=aimPos() or (t.Position+(av*0.1))
