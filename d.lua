@@ -371,6 +371,7 @@ if typeof(a[1])=="Vector3" and typeof(a[2])=="Vector3" then
 a[2]=ad(a[1],p)
 return on(s,unpack(a))
 end
+end
 elseif m=="FindPartOnRay" or m=="FindPartOnRayWithIgnoreList" or m=="FindPartOnRayWithWhitelist" then
 local a={...}
 if typeof(a[1])=="Ray" then
