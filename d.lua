@@ -376,7 +376,6 @@ if typeof(a[1])=="Vector3" and typeof(a[2])=="Vector3" then
 a[2]=ad(a[1],p)
 return on(s,unpack(a))
 end
-end
 elseif m=="FindPartOnRay" or m=="FindPartOnRayWithIgnoreList" or m=="FindPartOnRayWithWhitelist" then
 local a={...}
 if typeof(a[1])=="Ray" then
@@ -425,10 +424,8 @@ end
 end
 end
 end
-end
 return of[n](...)
 end)
-end
 end
 end
 ri=true
@@ -596,7 +593,7 @@ local coinNoclip=false
 local function cs()
 local r=gr()
 local h=gh()
-if not h or (h and h.Health<=0) then return end
+if not r or not h or h.Health<=0 then return end
 if not cfg.fm.cn then
 if coinNoclip then
 r.CanCollide=true
