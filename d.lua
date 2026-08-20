@@ -270,9 +270,13 @@ end)
 local at=nil
 local av=Vector3.new(0,0,0)
 local shooting=false
+local shootStartTime=0
 ms.Button1Down:Connect(function()
 shooting=true
-task.delay(0.2,function() shooting=false end)
+shootStartTime=tick()
+task.delay(0.3,function()
+if tick()-shootStartTime>=0.29 then shooting=false end
+end)
 end)
 local function ra()
 if not cfg.cb.sa then at=nil return end
@@ -322,6 +326,13 @@ local function ad(o,t)
 local d=t-o
 if d.Magnitude<0.01 then return d end
 return d.Unit*math.min(d.Magnitude+1,999)
+end
+local function isPlayerRaycast(origin,dir)
+local r=gr()
+if not r then return false end
+if (origin-r.Position).Magnitude>10 then return false end
+if dir.Y>0.5 or dir.Y<-0.5 then return false end
+return true
 end
 local mh=false
 local oi=nil
@@ -373,14 +384,18 @@ local p=aimPos() or (t.Position+(av*0.1))
 if m=="Raycast" then
 local a={...}
 if typeof(a[1])=="Vector3" and typeof(a[2])=="Vector3" then
+if isPlayerRaycast(a[1],a[2]) then
 a[2]=ad(a[1],p)
 return on(s,unpack(a))
+end
 end
 elseif m=="FindPartOnRay" or m=="FindPartOnRayWithIgnoreList" or m=="FindPartOnRayWithWhitelist" then
 local a={...}
 if typeof(a[1])=="Ray" then
+if isPlayerRaycast(a[1].Origin,a[1].Direction) then
 a[1]=Ray.new(a[1].Origin,ad(a[1].Origin,p))
 return on(s,unpack(a))
+end
 end
 end
 end
@@ -413,13 +428,17 @@ local p=aimPos() or (t.Position+(av*0.1))
 local a={...}
 if n=="Raycast" then
 if typeof(a[1])=="Vector3" and typeof(a[2])=="Vector3" then
+if isPlayerRaycast(a[1],a[2]) then
 a[2]=ad(a[1],p)
 return of[n](unpack(a))
 end
+end
 else
 if typeof(a[1])=="Ray" then
+if isPlayerRaycast(a[1].Origin,a[1].Direction) then
 a[1]=Ray.new(a[1].Origin,ad(a[1].Origin,p))
 return of[n](unpack(a))
+end
 end
 end
 end
@@ -498,9 +517,9 @@ local r=gr()
 if not r then return end
 local origin=r.CFrame
 local parts={}
-for i=1,8 do
+for i=1,16 do
 local p=Instance.new("Part")
-p.Size=Vector3.new(2,2,2)
+p.Size=Vector3.new(3,3,3)
 p.Transparency=1
 p.CanCollide=true
 p.Anchored=false
@@ -510,18 +529,18 @@ local w=Instance.new("WeldConstraint")
 w.Part0=r
 w.Part1=p
 w.Parent=p
-p.CFrame=r.CFrame*CFrame.Angles(0,math.pi*2*i/8,0)*CFrame.new(0,0,3)
+p.CFrame=r.CFrame*CFrame.Angles(math.random(0,math.pi*2),math.random(0,math.pi*2),math.random(0,math.pi*2))*CFrame.new(math.random(-2,2),math.random(-2,2),math.random(-2,2))
 table.insert(parts,{p=p,w=w})
 end
 pcall(function() r.CFrame=targetRoot.CFrame end)
 local t0=tick()
 pcall(function()
-while tick()-t0<0.6 do
+while tick()-t0<1.5 do
 rs.Heartbeat:Wait()
 if not targetRoot.Parent then break end
-local a=(tick()-t0)*80
-r.CFrame=targetRoot.CFrame*CFrame.Angles(0,a,0)
-r.Velocity=Vector3.new(math.random(-800,800),math.random(500,1500),math.random(-800,800))
+local a=(tick()-t0)*150
+r.CFrame=targetRoot.CFrame*CFrame.Angles(a,a*0.7,a*0.3)
+r.Velocity=Vector3.new(math.random(-1200,1200),math.random(1000,2500),math.random(-1200,1200))
 end
 end)
 for _,pt in ipairs(parts) do pcall(function() pt.w:Destroy() pt.p:Destroy() end) end
@@ -717,10 +736,12 @@ end
 local mb=tbtn("-", -70, th.Pl)
 local cb=tbtn("X", -36, th.Ad)
 local iconGui=nil
+local iconBtn=nil
+local iconPos=UDim2.new(0,10,0.5,-25)
 local function createIcon()
 if iconGui then return end
 iconGui=mk("ScreenGui",{Name="XScript_Icon",ResetOnSpawn=false,ZIndexBehavior=Enum.ZIndexBehavior.Sibling},cg)
-local iconBtn=mk("TextButton",{Size=UDim2.fromOffset(50,50),Position=UDim2.new(0,10,0.5,-25),BackgroundColor3=th.Pl,Text="",AutoButtonColor=false,BorderSizePixel=0,Active=true,Draggable=true},iconGui)
+iconBtn=mk("TextButton",{Size=UDim2.fromOffset(50,50),Position=iconPos,BackgroundColor3=th.Pl,Text="",AutoButtonColor=false,BorderSizePixel=0,Active=true,Draggable=true},iconGui)
 mk("UICorner",{CornerRadius=UDim.new(0,10)},iconBtn)
 mk("UIStroke",{Color=th.St,Thickness=2},iconBtn)
 if logo~=0 then
@@ -739,6 +760,9 @@ iconBtn.MouseButton1Click:Connect(function()
 mn.Visible=true
 iconGui.Enabled=false
 iconGui=nil
+end)
+iconBtn:GetPropertyChangedSignal("Position"):Connect(function()
+iconPos=iconBtn.Position
 end)
 end
 mb.MouseButton1Click:Connect(function()
